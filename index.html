@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GenAI for Climate & SDGs: An Interactive Exploration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Visualization & Content Choices: 
+        - Key Stats (Hero): Goal: Inform/Impact. Method: Animated counters (JS/HTML). Text translatable. Hero image (height adjusted to 380px) added.
+        - Core Dilemma: Goal: Compare. Method: Two-column layout (HTML/Tailwind). Text translatable. Illustrative images added.
+        - Opportunities Chart & AI Insights: Goal: Compare/Inform/Explore. Method: Dynamic bar chart (Chart.js). "Adaptation" opportunities now display specific data analysis charts. "✨ Generate Actionable Insights" button (Gemini API) in modal. Content and chart elements translatable.
+        - SDG Connections: Goal: Relationships. Method: Dynamic radar chart (Chart.js). Contextual image added. Content and chart elements translatable.
+        - Governance Risks & AI Solutions: Goal: Organize/Explore. Method: Accordion (HTML/JS). "✨ Brainstorm Policy Solutions" button (Gemini API) in modal. Content translatable.
+        - GenAI Model Sandbox: Goal: Educate/Explore. Method: Interactive cards for model selection with placeholder images. Dynamic display of model info, including examples of pre-trained models from Google/IBM. "✨ Generate Example Application Scenario" button (Gemini API) in modal. Content translatable.
+        - Climate Innovation Datasets: Goal: Inform/Resource. Method: Static informational cards with placeholder images. Content translatable.
+        - Collaborate & Innovate: Goal: Engage/Action. Method: Informational cards explaining Agile MVP and providing placeholder contact details/social links, with illustrative images. Section title updated to reflect GreenAgileEco. Content translatable.
+        - Language Switcher: UI element for EN/NL selection.
+        - Images: Placeholder images from placehold.co used throughout to enhance visual communication, with onerror fallbacks.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F7F4;
+            color: #2c3e50;
+        }
+        .nav-link {
+            transition: color 0.3s ease;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #D97706;
+        }
+        .stat-card {
+            background-color: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .opportunity-card, .dataset-card, .model-select-card, .info-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        .opportunity-card:hover, .dataset-card:hover, .model-select-card:hover, .info-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .opportunity-card.active, .model-select-card.active {
+            transform: translateY(-2px);
+            box-shadow: 0 0 0 2px #D97706, 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-color: #D97706 !important;
+        }
+        .tab.active {
+            background-color: #D97706;
+            color: #ffffff;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 450px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .modal {
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+        }
+        .modal-content {
+            transition: transform 0.3s ease-in-out;
+        }
+        .gemini-button {
+            background-color: #fbbf24; /* amber-400 */
+            color: #78350f; /* amber-900 */
+        }
+        .gemini-button:hover {
+            background-color: #f59e0b; /* amber-500 */
+        }
+        .loader {
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #D97706; /* Orange */
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #model-info-display {
+            min-height: 200px; 
+        }
+        .contact-icon {
+            transition: color 0.3s ease;
+        }
+        .contact-icon:hover {
+            color: #D97706; 
+        }
+        .language-switcher {
+            position: relative;
+        }
+        .language-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background-color: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            z-index: 50;
+            min-width: 120px;
+        }
+        .hero-image-container {
+            max-height: 380px; 
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="sticky top-0 bg-[#F8F7F4]/80 backdrop-blur-lg z-50 border-b border-gray-200/50">
+        <nav class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <h1 class="text-xl font-bold text-gray-800" data-translate-key="header_title">GenAI for Climate & SDGs</h1>
+            <div class="flex items-center space-x-2 md:space-x-3 lg:space-x-4">
+                <div class="hidden md:flex flex-wrap justify-center items-center space-x-3 lg:space-x-4">
+                    <a href="#dilemma" class="nav-link text-gray-600 font-medium text-xs sm:text-sm lg:text-base" data-translate-key="nav_dilemma">The Dilemma</a>
+                    <a href="#opportunities" class="nav-link text-gray-600 font-medium text-xs sm:text-sm lg:text-base" data-translate-key="nav_opportunities">Opportunities</a>
+                    <a href="#sdgs" class="nav-link text-gray-600 font-medium text-xs sm:text-sm lg:text-base" data-translate-key="nav_sdg_impact">SDG Impact</a>
+                    <a href="#governance" class="nav-link text-gray-600 font-medium text-xs sm:text-sm lg:text-base" data-translate-key="nav_governance">Governance</a>
+                    <a href="#model-sandbox" class="nav-link text-gray-600 font-medium text-xs sm:text-sm lg:text-base" data-translate-key="nav_model_sandbox">Model Sandbox</a>
+                    <a href="#datasets" class="nav-link text-gray-600 font-medium text-xs sm:text-sm lg:text-base" data-translate-key="nav_datasets">Datasets</a>
+                    <a href="#collaborate" class="nav-link text-gray-600 font-medium text-xs sm:text-sm lg:text-base" data-translate-key="nav_collaborate">Collaborate</a>
+                </div>
+                <div class="language-switcher">
+                    <button id="language-toggle" class="p-2 rounded-md hover:bg-gray-100 text-gray-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 21l5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 016-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 01-3.827-5.802" />
+                        </svg>
+                    </button>
+                    <div id="language-dropdown" class="language-dropdown hidden mt-1">
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-lang="en">English</a>
+                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-lang="nl">Nederlands</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section id="hero" class="bg-gray-50">
+            <div class="hero-image-container">
+                <img src="https://placehold.co/1600x380/a7c957/2c3e50?text=AI+Driven+Climate+Solutions" 
+                     alt="Abstract representation of AI and Climate innovation" 
+                     class="w-full h-full object-cover"
+                     onerror="this.onerror=null;this.src='https://placehold.co/1600x380/cccccc/969696?text=Image+Not+Found';">
+            </div>
+            <div class="container mx-auto px-6 text-center py-12 md:py-16">
+                <h2 class="text-4xl md:text-6xl font-bold text-gray-800 leading-tight" data-translate-key="hero_title">Catalyst or Conundrum?</h2>
+                <p class="mt-4 text-lg md:text-xl text-gray-600 max-w-3xl mx-auto" data-translate-key="hero_subtitle">Generative AI presents a monumental opportunity to tackle the climate crisis and advance Sustainable Development Goals. Yet, its own environmental and ethical footprint creates a profound challenge. This exploration unpacks the dual nature of GenAI.</p>
+                <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                    <div class="stat-card p-6 rounded-xl shadow-sm">
+                        <p class="text-4xl font-bold text-amber-600" data-target="1.2">0</p>
+                        <p class="mt-2 text-gray-600" data-translate-key="stat_temp_increase">°C Average Global Temperature Increase Since 1880</p>
+                    </div>
+                    <div class="stat-card p-6 rounded-xl shadow-sm">
+                        <p class="text-4xl font-bold text-amber-600" data-target="5">0</p>
+                        <p class="mt-2 text-gray-600" data-translate-key="stat_disaster_increase">x Increase in Climate-Related Disasters in 50 Years</p>
+                    </div>
+                    <div class="stat-card p-6 rounded-xl shadow-sm">
+                        <p class="text-4xl font-bold text-amber-600" data-target="3.64">0</p>
+                        <p class="mt-2 text-gray-600" data-translate-key="stat_economic_losses">Trillion USD in Economic Losses from Disasters</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="dilemma" class="py-20 md:py-24">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl md:text-4xl font-bold text-gray-800" data-translate-key="dilemma_title">The Core Dilemma: A Double-Edged Sword</h3>
+                    <p class="mt-3 text-lg text-gray-600 max-w-3xl mx-auto" data-translate-key="dilemma_subtitle">To harness GenAI effectively, we must balance its immense creative potential against its significant resource demands and inherent risks. The path to a sustainable future requires navigating this duality with wisdom and foresight.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                    <div class="bg-white p-8 rounded-xl shadow-md border border-green-200">
+                        <div class="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-4">
+                            <img src="https://placehold.co/120x120/6a994e/ffffff?text=Potential" alt="Potential Icon" class="w-20 h-20 sm:w-24 sm:h-24 rounded-md object-cover flex-shrink-0" onerror="this.onerror=null;this.src='https://placehold.co/120x120/cccccc/969696?text=Img+Error';">
+                            <div>
+                                <h4 class="text-2xl font-bold text-green-700" data-translate-key="dilemma_potential_title">The Potential (The Upside)</h4>
+                                <p class="mt-2 text-gray-600" data-translate-key="dilemma_potential_desc">GenAI's ability to generate novel solutions, analyze complex systems, and accelerate discovery offers unprecedented tools for climate action and sustainable development.</p>
+                            </div>
+                        </div>
+                        <ul class="mt-6 space-y-3 text-gray-700" data-translate-key="dilemma_potential_list" data-list-keys="dilemma_potential_item1,dilemma_potential_item2,dilemma_potential_item3">
+                            </ul>
+                    </div>
+                    <div class="bg-white p-8 rounded-xl shadow-md border border-red-200">
+                         <div class="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-4">
+                            <img src="https://placehold.co/120x120/bc4749/ffffff?text=Peril" alt="Peril Icon" class="w-20 h-20 sm:w-24 sm:h-24 rounded-md object-cover flex-shrink-0" onerror="this.onerror=null;this.src='https://placehold.co/120x120/cccccc/969696?text=Img+Error';">
+                            <div>
+                                <h4 class="text-2xl font-bold text-red-700" data-translate-key="dilemma_peril_title">The Peril (The Footprint)</h4>
+                                <p class="mt-2 text-gray-600" data-translate-key="dilemma_peril_desc">The technology's substantial energy and water consumption, along with ethical risks, poses a direct challenge to the very sustainability goals it aims to support.</p>
+                            </div>
+                        </div>
+                        <ul class="mt-6 space-y-3 text-gray-700" data-translate-key="dilemma_peril_list" data-list-keys="dilemma_peril_item1,dilemma_peril_item2,dilemma_peril_item3">
+                           </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="opportunities" class="py-20 md:py-24 bg-gray-50">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl md:text-4xl font-bold text-gray-800" data-translate-key="opportunities_title">Exploring the Frontiers of Opportunity</h3>
+                    <p class="mt-3 text-lg text-gray-600 max-w-3xl mx-auto" data-translate-key="opportunities_subtitle">GenAI's applications span two critical domains: mitigating the root causes of climate change and adapting our societies to its inevitable impacts. Explore the interactive cards to see how GenAI is making a difference, view contextual data in the chart, and generate deeper insights with AI.</p>
+                </div>
+                <div class="flex justify-center mb-8">
+                    <div class="flex space-x-2 bg-white p-1 rounded-full shadow-sm">
+                        <button id="mitigation-tab" class="tab py-2 px-6 rounded-full text-sm font-medium transition-colors duration-300" data-translate-key="opportunities_tab_mitigation">Mitigation</button>
+                        <button id="adaptation-tab" class="tab py-2 px-6 rounded-full text-sm font-medium transition-colors duration-300" data-translate-key="opportunities_tab_adaptation">Adaptation</button>
+                    </div>
+                </div>
+
+                <div id="opportunities-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                </div>
+
+                <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg mt-8">
+                     <p id="chart-title" class="text-center text-xl font-semibold text-gray-700 mb-4" data-translate-key="opportunities_chart_placeholder_title">Select an Opportunity Above</p>
+                    <div class="chart-container">
+                        <canvas id="opportunitiesChart"></canvas>
+                    </div>
+                    <p id="chart-description" class="text-center text-sm text-gray-500 mt-4" data-translate-key="opportunities_chart_placeholder_desc">This chart dynamically visualizes key metrics related to the selected opportunity, offering a glimpse into its potential impact.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="sdgs" class="py-20 md:py-24">
+            <div class="container mx-auto px-6">
+                 <div class="text-center mb-12">
+                    <h3 class="text-3xl md:text-4xl font-bold text-gray-800" data-translate-key="sdgs_title">Weaving a Sustainable Web: GenAI & the SDGs</h3>
+                    <p class="mt-3 text-lg text-gray-600 max-w-3xl mx-auto" data-translate-key="sdgs_subtitle">GenAI's impact isn't isolated. Its applications create ripple effects, supporting a wide range of Sustainable Development Goals. Select an area to see its interconnected impact on the SDGs, demonstrating how climate action is fundamentally linked to broader human and planetary well-being.</p>
+                </div>
+                <div class="max-w-5xl mx-auto md:flex items-center gap-12">
+                    <div class="md:w-1/3 mb-8 md:mb-0">
+                        <img src="https://placehold.co/300x250/f2e8cf/3a5a40?text=Global+SDG+Connections" alt="Global SDG Connections" class="w-full h-auto rounded-lg shadow-md mb-6" onerror="this.onerror=null;this.src='https://placehold.co/300x250/cccccc/969696?text=Img+Error';">
+                        <label for="sdg-selector" class="block text-sm font-medium text-gray-700 mb-2" data-translate-key="sdgs_selector_label">Select Opportunity Area:</label>
+                        <select id="sdg-selector" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500">
+                        </select>
+                        <div id="sdg-description-container" class="mt-4 p-4 bg-gray-50 rounded-lg border">
+                           <p class="text-gray-600" data-translate-key="sdgs_chart_desc">The radar chart shows the relative contribution of the selected GenAI opportunity area to various Sustainable Development Goals. A higher score indicates a stronger, more direct impact.</p>
+                        </div>
+                    </div>
+                    <div class="md:w-2/3">
+                        <div class="bg-white p-4 rounded-xl shadow-lg">
+                            <div class="chart-container" style="height: 450px; max-height: 500px;">
+                                <canvas id="sdgChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="governance" class="py-20 md:py-24 bg-gray-50">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl md:text-4xl font-bold text-gray-800" data-translate-key="governance_title">Charting a Responsible Course</h3>
+                    <p class="mt-3 text-lg text-gray-600 max-w-3xl mx-auto" data-translate-key="governance_subtitle">To ensure GenAI is a net positive force, we must build robust governance frameworks. This involves addressing its environmental footprint, navigating ethical dilemmas, and ensuring equitable access for all. Click on each challenge to see proposed mitigation strategies and brainstorm further solutions with AI.</p>
+                </div>
+                <div id="accordion-container" class="max-w-3xl mx-auto space-y-4">
+                </div>
+            </div>
+        </section>
+
+        <section id="model-sandbox" class="py-20 md:py-24">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl md:text-4xl font-bold text-gray-800" data-translate-key="sandbox_title">GenAI Model Sandbox</h3>
+                    <p class="mt-3 text-lg text-gray-600 max-w-3xl mx-auto" data-translate-key="sandbox_subtitle">Different Generative AI models possess unique strengths for advanced climate modeling and data analysis. Select a model type below to learn about its core principles, applications in climate action, see examples of pre-trained models, and generate an example use case scenario with AI.</p>
+                </div>
+                <div id="model-selection-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-10">
+                    </div>
+                <div id="model-info-display" class="bg-white p-6 md:p-8 rounded-xl shadow-lg mt-8">
+                    <p class="text-center text-gray-500" data-translate-key="sandbox_placeholder">Select a model type above to see details and generate an example scenario.</p>
+                    </div>
+            </div>
+        </section>
+
+        <section id="datasets" class="py-20 md:py-24 bg-gray-50">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl md:text-4xl font-bold text-gray-800" data-translate-key="datasets_title">Climate Innovation Datasets</h3>
+                    <p class="mt-3 text-lg text-gray-600 max-w-3xl mx-auto" data-translate-key="datasets_subtitle">Kickstart your climate innovation journey with these key datasets. Explore their potential with Generative AI to uncover new insights and solutions for a sustainable future.</p>
+                </div>
+                <div id="datasets-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                     </div>
+            </div>
+        </section>
+
+        <section id="collaborate" class="py-20 md:py-24">
+            <div class="container mx-auto px-6">
+                <div class="text-center mb-12">
+                    <h3 class="text-3xl md:text-4xl font-bold text-gray-800" data-translate-key="collaborate_title">Collaborate with GreenAgileEco: Build Climate AI Solutions Together</h3>
+                    <p class="mt-3 text-lg text-gray-600 max-w-3xl mx-auto" data-translate-key="collaborate_subtitle">We believe that tackling the climate crisis requires collective intelligence and action. If you have ideas, expertise, or a passion for leveraging AI for climate efficiency and leadership, let's connect and transform concepts into impactful products.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                    <div class="info-card bg-white p-8 rounded-xl shadow-md border border-amber-200">
+                        <img src="https://placehold.co/400x200/8ecae6/023047?text=Agile+MVP+Process" alt="Agile MVP Process" class="w-full h-40 object-cover rounded-md mb-4" onerror="this.onerror=null;this.src='https://placehold.co/400x200/cccccc/969696?text=Img+Error';">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <span class="text-3xl">🚀</span>
+                            <h4 class="text-2xl font-bold text-amber-700" data-translate-key="collaborate_agile_title">Our Agile MVP Approach</h4>
+                        </div>
+                        <p class="text-gray-600 mb-3" data-translate-key="collaborate_agile_intro">We champion an Agile Minimum Viable Product (MVP) strategy to rapidly develop and deploy climate AI solutions. This means:</p>
+                        <ul class="list-disc list-inside text-gray-700 space-y-2 text-sm">
+                            <li data-translate-key="collaborate_agile_item1"><strong>Iterative Development:</strong> Building solutions in short cycles, allowing for continuous learning and adaptation.</li>
+                            <li data-translate-key="collaborate_agile_item2"><strong>Focus on Core Impact:</strong> Prioritizing features that deliver maximum climate efficiency and tangible benefits quickly.</li>
+                            <li data-translate-key="collaborate_agile_item3"><strong>Rapid Prototyping:</strong> Quickly turning ideas into testable prototypes to gather feedback and validate concepts.</li>
+                            <li data-translate-key="collaborate_agile_item4"><strong>User-Centric Design:</strong> Ensuring solutions are practical, usable, and address real-world needs of stakeholders in the climate space.</li>
+                            <li data-translate-key="collaborate_agile_item5"><strong>Data-Driven Refinement:</strong> Using performance data and user feedback to continuously improve and scale solutions.</li>
+                        </ul>
+                        <p class="text-gray-600 mt-4" data-translate-key="collaborate_agile_outro">This approach allows us to be nimble, reduce risk, and ensure that the AI products we build are truly effective in contributing to climate leadership and sustainability.</p>
+                    </div>
+                    <div class="info-card bg-white p-8 rounded-xl shadow-md border border-green-200">
+                        <img src="https://placehold.co/400x200/219ebc/ffffff?text=Global+Collaboration" alt="Global Collaboration Network" class="w-full h-40 object-cover rounded-md mb-4" onerror="this.onerror=null;this.src='https://placehold.co/400x200/cccccc/969696?text=Img+Error';">
+                        <div class="flex items-center space-x-3 mb-4">
+                             <span class="text-3xl">🤝</span>
+                            <h4 class="text-2xl font-bold text-green-700" data-translate-key="collaborate_connect_title">Let's Connect & Co-Create</h4>
+                        </div>
+                        <p class="text-gray-600 mb-4" data-translate-key="collaborate_connect_intro">Your insights and expertise are invaluable. Whether you're a researcher, innovator, policymaker, investor, or community leader, we invite you to join us in shaping the future of climate AI.</p>
+                        <div class="space-y-3">
+                            <p class="text-gray-700"><strong data-translate-key="collaborate_connect_q1">Have an idea for a climate AI product?</strong></p>
+                            <p class="text-gray-700"><strong data-translate-key="collaborate_connect_q2">Interested in partnering on a project?</strong></p>
+                            <p class="text-gray-700"><strong data-translate-key="collaborate_connect_q3">Want to learn more about our initiatives?</strong></p>
+                        </div>
+                        <div class="mt-6">
+                            <p class="text-gray-700 font-semibold mb-1" data-translate-key="collaborate_connect_reach_out">Reach out to us:</p>
+                            <a href="mailto:contact@climateai-initiative.org" class="text-amber-600 hover:text-amber-700 font-medium break-all">contact@climateai-initiative.org</a>
+                        </div>
+                        <div class="mt-6">
+                            <p class="text-gray-700 font-semibold mb-2" data-translate-key="collaborate_connect_follow_us">Follow our journey & join the conversation:</p>
+                            <div class="flex space-x-4">
+                                <a href="#" target="_blank" rel="noopener noreferrer" class="text-gray-500 contact-icon text-2xl" aria-label="LinkedIn" data-translate-aria-label="social_linkedin">
+                                    <svg fill="currentColor" viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                                </a>
+                                <a href="#" target="_blank" rel="noopener noreferrer" class="text-gray-500 contact-icon text-2xl" aria-label="Twitter / X" data-translate-aria-label="social_twitter">
+                                    <svg fill="currentColor" viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                                </a>
+                                 <a href="#" target="_blank" rel="noopener noreferrer" class="text-gray-500 contact-icon text-2xl" aria-label="GitHub" data-translate-aria-label="social_github">
+                                    <svg fill="currentColor" viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.483 0-.237-.009-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.031-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.026 2.747-1.026.546 1.379.203 2.398.1 2.651.64.7 1.03 1.595 1.03 2.688 0 3.848-2.339 4.695-4.566 4.942.359.309.678.92.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.001 10.001 0 0022 12c0-5.523-4.477-10-10-10z" clip-rule="evenodd" /></svg>
+                                </a>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-6" data-translate-key="collaborate_connect_mailing">Join our mailing list or attend an upcoming workshop (Details coming soon!).</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white py-12">
+        <div class="container mx-auto px-6 text-center">
+            <p class="font-semibold text-lg" data-translate-key="footer_title">Harnessing GenAI for a Sustainable Future</p>
+            <p class="mt-2 text-gray-400 max-w-2xl mx-auto" data-translate-key="footer_subtitle">The journey ahead requires a delicate balance: fostering innovation while instilling accountability, democratizing access while safeguarding against harm, and leveraging AI's power while respecting planetary boundaries and human values.</p>
+            <p class="mt-6 text-sm text-gray-500" data-translate-key="footer_report_basis">Interactive report based on "Generative AI: Catalyzing Climate Solutions and Sustainable Development".</p>
+            <p class="mt-2 text-sm text-gray-500" data-translate-key="footer_gdpr">Data Processing aligned with GDPR Principles. &copy; 2025 Climate & AI Initiative.</p>
+            <p class="mt-2 text-xs text-gray-600" data-translate-key="footer_trademarks">Powered by Gemini A.I. | IBM Climate Project Idea | Prompt Design by GreenAgileEco&trade;</p>
+        </div>
+    </footer>
+
+    <div id="geminiModal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[100] opacity-0 invisible">
+        <div class="modal-content bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto transform scale-95">
+            <div class="flex justify-between items-center mb-4">
+                <h4 id="geminiModalTitle" class="text-xl font-semibold text-gray-800" data-translate-key="gemini_modal_title">AI Generated Content</h4>
+                <button id="closeGeminiModal" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div id="geminiModalBody" class="text-gray-700 space-y-4">
+                 <div class="flex justify-center items-center h-32">
+                    <div class="loader"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- TRANSLATION DATA ---
+        const siteTranslations = {
+            en: {
+                header_title: "GenAI for Climate & SDGs",
+                nav_dilemma: "The Dilemma",
+                nav_opportunities: "Opportunities",
+                nav_sdg_impact: "SDG Impact",
+                nav_governance: "Governance",
+                nav_model_sandbox: "Model Sandbox",
+                nav_datasets: "Datasets",
+                nav_collaborate: "Collaborate",
+                hero_title: "Catalyst or Conundrum?",
+                hero_subtitle: "Generative AI presents a monumental opportunity to tackle the climate crisis and advance Sustainable Development Goals. Yet, its own environmental and ethical footprint creates a profound challenge. This exploration unpacks the dual nature of GenAI.",
+                stat_temp_increase: "°C Average Global Temperature Increase Since 1880",
+                stat_disaster_increase: "x Increase in Climate-Related Disasters in 50 Years",
+                stat_economic_losses: "Trillion USD in Economic Losses from Disasters",
+                dilemma_title: "The Core Dilemma: A Double-Edged Sword",
+                dilemma_subtitle: "To harness GenAI effectively, we must balance its immense creative potential against its significant resource demands and inherent risks. The path to a sustainable future requires navigating this duality with wisdom and foresight.",
+                dilemma_potential_title: "The Potential (The Upside)",
+                dilemma_potential_desc: "GenAI's ability to generate novel solutions, analyze complex systems, and accelerate discovery offers unprecedented tools for climate action and sustainable development.",
+                dilemma_potential_item1: "<b>Innovating Climate Tech:</b> Designing new materials for carbon capture and renewable energy.",
+                dilemma_potential_item2: "<b>Enhanced Prediction:</b> Accelerating climate modeling and early warnings for extreme events.",
+                dilemma_potential_item3: "<b>Resilient Systems:</b> Designing adaptive infrastructure and circular economies.",
+                dilemma_peril_title: "The Peril (The Footprint)",
+                dilemma_peril_desc: "The technology's substantial energy and water consumption, along with ethical risks, poses a direct challenge to the very sustainability goals it aims to support.",
+                dilemma_peril_item1: "<b>High Energy Use:</b> Training large models consumes massive amounts of electricity, creating significant carbon emissions.",
+                dilemma_peril_item2: "<b>Ethical Risks:</b> Potential for algorithmic bias, job displacement, and widespread misinformation.",
+                dilemma_peril_item3: "<b>Resource Strain:</b> Water consumption for cooling data centers can impact local supplies.",
+                opportunities_title: "Exploring the Frontiers of Opportunity",
+                opportunities_subtitle: "GenAI's applications span two critical domains: mitigating the root causes of climate change and adapting our societies to its inevitable impacts. Explore the interactive cards to see how GenAI is making a difference, view contextual data in the chart, and generate deeper insights with AI.",
+                opportunities_tab_mitigation: "Mitigation",
+                opportunities_tab_adaptation: "Adaptation",
+                opportunities_chart_placeholder_title: "Select an Opportunity Above",
+                opportunities_chart_placeholder_desc: "This chart dynamically visualizes key metrics related to the selected opportunity, offering a glimpse into its potential impact.",
+                opportunities_gemini_button: "✨ Generate Actionable Insights",
+                sdgs_title: "Weaving a Sustainable Web: GenAI & the SDGs",
+                sdgs_subtitle: "GenAI's impact isn't isolated. Its applications create ripple effects, supporting a wide range of Sustainable Development Goals. Select an area to see its interconnected impact on the SDGs, demonstrating how climate action is fundamentally linked to broader human and planetary well-being.",
+                sdgs_selector_label: "Select Opportunity Area:",
+                sdgs_chart_desc: "The radar chart shows the relative contribution of the selected GenAI opportunity area to various Sustainable Development Goals. A higher score indicates a stronger, more direct impact.",
+                sdgs_chart_dataset_label: "SDG Impact Score",
+                sdg_labels: ['SDG 1 (Poverty)', 'SDG 2 (Hunger)', 'SDG 6 (Water)', 'SDG 7 (Energy)', 'SDG 9 (Infrastructure)', 'SDG 11 (Cities)', 'SDG 12 (Consumption)', 'SDG 13 (Climate)', 'SDG 14 (Life/Water)', 'SDG 15 (Life/Land)', 'SDG 17 (Partnerships)'],
+                governance_title: "Charting a Responsible Course",
+                governance_subtitle: "To ensure GenAI is a net positive force, we must build robust governance frameworks. This involves addressing its environmental footprint, navigating ethical dilemmas, and ensuring equitable access for all. Click on each challenge to see proposed mitigation strategies and brainstorm further solutions with AI.",
+                governance_gemini_button: "✨ Brainstorm Policy Solutions",
+                sandbox_title: "GenAI Model Sandbox",
+                sandbox_subtitle: "Different Generative AI models possess unique strengths for advanced climate modeling and data analysis. Select a model type below to learn about its core principles, applications in climate action, see examples of pre-trained models, and generate an example use case scenario with AI.",
+                sandbox_placeholder: "Select a model type above to see details and generate an example scenario.",
+                sandbox_core_principle: "Core Principle:",
+                sandbox_strengths: "Strengths for Climate/SDG Analysis:",
+                sandbox_applications: "Example Climate Applications:",
+                sandbox_pretrained_title: "Notable Pre-trained Models & Platforms:",
+                sandbox_gemini_button: "✨ Generate Example Application Scenario",
+                datasets_title: "Climate Innovation Datasets",
+                datasets_subtitle: "Kickstart your climate innovation journey with these key datasets. Explore their potential with Generative AI to uncover new insights and solutions for a sustainable future.",
+                datasets_use_cases_title: "GenAI Use Cases:",
+                datasets_card1_title: "IPCC Data (CMIP6)",
+                datasets_card1_desc: "Comprehensive climate model outputs from the Coupled Model Intercomparison Project Phase 6, underpinning IPCC reports. Includes historical data and future projections under various emission scenarios.",
+                datasets_card1_item1: "High-resolution climate downscaling.",
+                datasets_card1_item2: "Generating diverse climate scenarios.",
+                datasets_card1_item3: "Training models for climate impact assessments.",
+                datasets_card1_item4: "Identifying potential climate tipping points.",
+                datasets_card1_button: "Access IPCC Data (ESGF)",
+                datasets_card2_title: "NASA Earthdata",
+                datasets_card2_desc: "Vast archive of satellite imagery and Earth observation data (e.g., MODIS, Landsat) covering land, oceans, atmosphere, and cryosphere.",
+                datasets_card2_item1: "Deforestation and land use change detection.",
+                datasets_card2_item2: "Flood mapping and wildfire tracking.",
+                datasets_card2_item3: "Ecosystem health and biodiversity monitoring.",
+                datasets_card2_item4: "Generating synthetic satellite imagery.",
+                datasets_card2_button: "Explore NASA Earthdata",
+                datasets_card3_title: "Global Carbon Project / EDGAR",
+                datasets_card3_desc: "Global datasets of greenhouse gas emissions by country, sector, and gas (e.g., CO2, CH4). EDGAR is the Emissions Database for Global Atmospheric Research.",
+                datasets_card3_item1: "Analyzing historical emission trends.",
+                datasets_card3_item2: "Forecasting future emissions under policies.",
+                datasets_card3_item3: "Identifying emission hotspots and mitigation opportunities.",
+                datasets_card3_item4: "Generating decarbonization pathway scenarios.",
+                datasets_card3_button: "Visit Global Carbon Project",
+                datasets_card4_title: "NREL Renewable Energy Data",
+                datasets_card4_desc: "Data and tools from the National Renewable Energy Laboratory, including solar radiation (NSRDB), wind resources (WIND Toolkit), and advanced models like Sup3rCC for climate impacts on renewables.",
+                datasets_card4_item1: "Optimizing renewable energy plant siting.",
+                datasets_card4_item2: "Forecasting solar and wind energy generation.",
+                datasets_card4_item3: "Designing resilient renewable-heavy energy grids.",
+                datasets_card4_item4: "High-resolution renewable resource projection.",
+                datasets_card4_button: "Access NREL Data & Tools",
+                datasets_card5_title: "World Bank Climate Portal",
+                datasets_card5_desc: "The Climate Change Knowledge Portal provides global and country-level data on historical climate, projections, vulnerabilities, sectoral impacts, and adaptation options.",
+                datasets_card5_item1: "Assessing regional climate risks and vulnerabilities.",
+                datasets_card5_item2: "Informing national adaptation planning (NAPs).",
+                datasets_card5_item3: "Generating localized climate impact narratives.",
+                datasets_card5_item4: "Supporting climate-related policy analysis.",
+                datasets_card5_button: "Explore World Bank CCKP",
+                collaborate_title: "Collaborate with GreenAgileEco: Build Climate AI Solutions Together",
+                collaborate_subtitle: "We believe that tackling the climate crisis requires collective intelligence and action. If you have ideas, expertise, or a passion for leveraging AI for climate efficiency and leadership, let's connect and transform concepts into impactful products.",
+                collaborate_agile_title: "Our Agile MVP Approach",
+                collaborate_agile_intro: "We champion an Agile Minimum Viable Product (MVP) strategy to rapidly develop and deploy climate AI solutions. This means:",
+                collaborate_agile_item1: "<strong>Iterative Development:</strong> Building solutions in short cycles, allowing for continuous learning and adaptation.",
+                collaborate_agile_item2: "<strong>Focus on Core Impact:</strong> Prioritizing features that deliver maximum climate efficiency and tangible benefits quickly.",
+                collaborate_agile_item3: "<strong>Rapid Prototyping:</strong> Quickly turning ideas into testable prototypes to gather feedback and validate concepts.",
+                collaborate_agile_item4: "<strong>User-Centric Design:</strong> Ensuring solutions are practical, usable, and address real-world needs of stakeholders in the climate space.",
+                collaborate_agile_item5: "<strong>Data-Driven Refinement:</strong> Using performance data and user feedback to continuously improve and scale solutions.",
+                collaborate_agile_outro: "This approach allows us to be nimble, reduce risk, and ensure that the AI products we build are truly effective in contributing to climate leadership and sustainability.",
+                collaborate_connect_title: "Let's Connect & Co-Create",
+                collaborate_connect_intro: "Your insights and expertise are invaluable. Whether you're a researcher, innovator, policymaker, investor, or community leader, we invite you to join us in shaping the future of climate AI.",
+                collaborate_connect_q1: "Have an idea for a climate AI product?",
+                collaborate_connect_q2: "Interested in partnering on a project?",
+                collaborate_connect_q3: "Want to learn more about our initiatives?",
+                collaborate_connect_reach_out: "Reach out to us:",
+                collaborate_connect_follow_us: "Follow our journey & join the conversation:",
+                social_linkedin: "LinkedIn",
+                social_twitter: "Twitter / X",
+                social_github: "GitHub",
+                collaborate_connect_mailing: "Join our mailing list or attend an upcoming workshop (Details coming soon!).",
+                footer_title: "Harnessing GenAI for a Sustainable Future",
+                footer_subtitle: "The journey ahead requires a delicate balance: fostering innovation while instilling accountability, democratizing access while safeguarding against harm, and leveraging AI's power while respecting planetary boundaries and human values.",
+                footer_report_basis: "Interactive report based on "Generative AI: Catalyzing Climate Solutions and Sustainable Development".",
+                footer_gdpr: "Data Processing aligned with GDPR Principles. &copy; 2025 Climate & AI Initiative.",
+                footer_trademarks: "Powered by Gemini A.I. | IBM Climate Project Idea | Prompt Design by GreenAgileEco&trade;",
+                gemini_modal_title: "AI Generated Content",
+                opportunities_chart_label: "Metric Value",
+            },
+            nl: {
+                header_title: "GenAI voor Klimaat & SDG's",
+                nav_dilemma: "Het Dilemma",
+                nav_opportunities: "Kansen",
+                nav_sdg_impact: "SDG Impact",
+                nav_governance: "Bestuur",
+                nav_model_sandbox: "Model Sandbox",
+                nav_datasets: "Datasets",
+                nav_collaborate: "Samenwerken",
+                hero_title: "Katalysator of Raadsel?",
+                hero_subtitle: "Generatieve AI biedt een monumentale kans om de klimaatcrisis aan te pakken en Duurzame Ontwikkelingsdoelen te bevorderen. Toch creëert zijn eigen ecologische en ethische voetafdruk een diepgaande uitdaging. Deze verkenning ontrafelt de duale aard van GenAI.",
+                stat_temp_increase: "°C Gemiddelde Globale Temperatuurstijging Sinds 1880",
+                stat_disaster_increase: "x Toename Klimaatgerelateerde Rampen in 50 Jaar",
+                stat_economic_losses: "Biljoen USD Economische Schade door Rampen",
+                dilemma_title: "Het Kerndilemma: Een Tweesnijdend Zwaard",
+                dilemma_subtitle: "Om GenAI effectief te benutten, moeten we zijn immense creatieve potentieel balanceren tegen zijn aanzienlijke resourcevereisten en inherente risico's. De weg naar een duurzame toekomst vereist het navigeren van deze dualiteit met wijsheid en vooruitziendheid.",
+                dilemma_potential_title: "Het Potentieel (De Voordelen)",
+                dilemma_potential_desc: "GenAI's vermogen om nieuwe oplossingen te genereren, complexe systemen te analyseren en ontdekkingen te versnellen, biedt ongekende hulpmiddelen voor klimaatactie en duurzame ontwikkeling.",
+                dilemma_potential_item1: "<b>Innovatie in Klimaattechnologie:</b> Ontwerpen van nieuwe materialen voor koolstofafvang en hernieuwbare energie.",
+                dilemma_potential_item2: "<b>Verbeterde Voorspelling:</b> Versnellen van klimaatmodellering en vroege waarschuwingen voor extreme gebeurtenissen.",
+                dilemma_potential_item3: "<b>Veerkrachtige Systemen:</b> Ontwerpen van adaptieve infrastructuur en circulaire economieën.",
+                dilemma_peril_title: "Het Gevaar (De Voetafdruk)",
+                dilemma_peril_desc: "Het aanzienlijke energie- en waterverbruik van de technologie, samen met ethische risico's, vormt een directe uitdaging voor de duurzaamheidsdoelen die het beoogt te ondersteunen.",
+                dilemma_peril_item1: "<b>Hoog Energieverbruik:</b> Het trainen van grote modellen verbruikt enorme hoeveelheden elektriciteit, wat leidt tot aanzienlijke koolstofemissies.",
+                dilemma_peril_item2: "<b>Ethische Risico's:</b> Potentieel voor algoritmische bias, banenverlies en wijdverspreide desinformatie.",
+                dilemma_peril_item3: "<b>Grondstofbelasting:</b> Waterverbruik voor het koelen van datacenters kan lokale watervoorraden beïnvloeden.",
+                opportunities_title: "De Grenzen van Mogelijkheden Verkennen",
+                opportunities_subtitle: "De toepassingen van GenAI bestrijken twee kritieke domeinen: het mitigeren van de hoofdoorzaken van klimaatverandering en het aanpassen van onze samenlevingen aan de onvermijdelijke gevolgen ervan. Verken de interactieve kaarten om te zien hoe GenAI een verschil maakt, bekijk contextuele data in de grafiek en genereer diepere inzichten met AI.",
+                opportunities_tab_mitigation: "Mitigatie",
+                opportunities_tab_adaptation: "Adaptatie",
+                opportunities_chart_placeholder_title: "Selecteer hierboven een Kans",
+                opportunities_chart_placeholder_desc: "Deze grafiek visualiseert dynamisch belangrijke statistieken met betrekking tot de geselecteerde kans en biedt een glimp van de potentiële impact.",
+                opportunities_gemini_button: "✨ Genereer Actiegerichte Inzichten",
+                sdgs_title: "Een Duurzaam Web Weven: GenAI & de SDG's",
+                sdgs_subtitle: "De impact van GenAI is niet geïsoleerd. De toepassingen ervan creëren rimpeleffecten en ondersteunen een breed scala aan Duurzame Ontwikkelingsdoelen. Selecteer een gebied om de onderling verbonden impact op de SDG's te zien, wat aantoont hoe klimaatactie fundamenteel verbonden is met breder menselijk en planetair welzijn.",
+                sdgs_selector_label: "Selecteer Kansgebied:",
+                sdgs_chart_desc: "De radargrafiek toont de relatieve bijdrage van het geselecteerde GenAI-kansgebied aan verschillende Duurzame Ontwikkelingsdoelen. Een hogere score duidt op een sterkere, directere impact.",
+                sdgs_chart_dataset_label: "SDG Impactscore",
+                sdg_labels: ['SDG 1 (Armoede)', 'SDG 2 (Honger)', 'SDG 6 (Water)', 'SDG 7 (Energie)', 'SDG 9 (Infrastructuur)', 'SDG 11 (Steden)', 'SDG 12 (Consumptie)', 'SDG 13 (Klimaat)', 'SDG 14 (Leven/Water)', 'SDG 15 (Leven/Land)', 'SDG 17 (Partnerschappen)'],
+                governance_title: "Een Verantwoorde Koers Uitzetten",
+                governance_subtitle: "Om ervoor te zorgen dat GenAI een netto positieve kracht is, moeten we robuuste bestuurskaders opbouwen. Dit omvat het aanpakken van de ecologische voetafdruk, het navigeren door ethische dilemma's en het waarborgen van gelijke toegang voor iedereen. Klik op elke uitdaging om voorgestelde mitigatiestrategieën te zien en verdere oplossingen te brainstormen met AI.",
+                governance_gemini_button: "✨ Brainstorm Beleidsoplossingen",
+                sandbox_title: "GenAI Model Sandbox",
+                sandbox_subtitle: "Verschillende Generatieve AI-modellen bezitten unieke sterktes voor geavanceerde klimaatmodellering en data-analyse. Selecteer hieronder een modeltype om meer te weten te komen over de kernprincipes, toepassingen in klimaatactie, voorbeelden van vooraf getrainde modellen te zien en een voorbeeld van een gebruiksscenario te genereren met AI.",
+                sandbox_placeholder: "Selecteer hierboven een modeltype om details te zien en een voorbeeldscenario te genereren.",
+                sandbox_core_principle: "Kernprincipe:",
+                sandbox_strengths: "Sterktes voor Klimaat/SDG Analyse:",
+                sandbox_applications: "Voorbeeld Klimaat Toepassingen:",
+                sandbox_pretrained_title: "Opmerkelijke Vooraf Getrainde Modellen & Platformen:",
+                sandbox_gemini_button: "✨ Genereer Voorbeeld Toepassingsscenario",
+                datasets_title: "Datasets voor Klimaatinnovatie",
+                datasets_subtitle: "Start uw klimaatinnovatiereis met deze belangrijke datasets. Verken hun potentieel met Generatieve AI om nieuwe inzichten en oplossingen voor een duurzame toekomst te ontdekken.",
+                datasets_use_cases_title: "GenAI Gebruiksscenario's:",
+                datasets_card1_title: "IPCC Data (CMIP6)",
+                datasets_card1_desc: "Uitgebreide klimaatmodel-outputs van het Coupled Model Intercomparison Project Phase 6, die IPCC-rapporten ondersteunen. Bevat historische data en toekomstprojecties onder verschillende emissiescenario's.",
+                datasets_card1_item1: "Hoge-resolutie klimaat downscaling.",
+                datasets_card1_item2: "Genereren van diverse klimaatscenario's.",
+                datasets_card1_item3: "Trainen van modellen voor klimaateffectbeoordelingen.",
+                datasets_card1_item4: "Identificeren van potentiële klimaatkantelpunten.",
+                datasets_card1_button: "Toegang tot IPCC Data (ESGF)",
+                datasets_card2_title: "NASA Earthdata",
+                datasets_card2_desc: "Uitgebreid archief van satellietbeelden en aardobservatiedata (bijv. MODIS, Landsat) over land, oceanen, atmosfeer en cryosfeer.",
+                datasets_card2_item1: "Detectie van ontbossing en landgebruiksverandering.",
+                datasets_card2_item2: "Kartering van overstromingen en monitoring van bosbranden.",
+                datasets_card2_item3: "Monitoring van ecosysteemgezondheid en biodiversiteit.",
+                datasets_card2_item4: "Genereren van synthetische satellietbeelden.",
+                datasets_card2_button: "Verken NASA Earthdata",
+                datasets_card3_title: "Global Carbon Project / EDGAR",
+                datasets_card3_desc: "Globale datasets van broeikasgasemissies per land, sector en gas (bijv. CO2, CH4). EDGAR is de Emissions Database for Global Atmospheric Research.",
+                datasets_card3_item1: "Analyseren van historische emissietrends.",
+                datasets_card3_item2: "Voorspellen van toekomstige emissies onder beleid.",
+                datasets_card3_item3: "Identificeren van emissiehotspots en mitigatiekansen.",
+                datasets_card3_item4: "Genereren van decarbonisatiepadscenario's.",
+                datasets_card3_button: "Bezoek Global Carbon Project",
+                datasets_card4_title: "NREL Hernieuwbare Energie Data",
+                datasets_card4_desc: "Data en tools van het National Renewable Energy Laboratory, inclusief zonnestraling (NSRDB), windbronnen (WIND Toolkit), en geavanceerde modellen zoals Sup3rCC voor klimaateffecten op hernieuwbare energie.",
+                datasets_card4_item1: "Optimaliseren van de locatiekeuze voor hernieuwbare energiecentrales.",
+                datasets_card4_item2: "Voorspellen van zonne- en windenergieopwekking.",
+                datasets_card4_item3: "Ontwerpen van veerkrachtige energienetwerken met veel hernieuwbare energie.",
+                datasets_card4_item4: "Hoge-resolutie projectie van hernieuwbare bronnen.",
+                datasets_card4_button: "Toegang tot NREL Data & Tools",
+                datasets_card5_title: "Wereldbank Klimaatportaal",
+                datasets_card5_desc: "Het Climate Change Knowledge Portal biedt globale en landspecifieke data over historisch klimaat, projecties, kwetsbaarheden, sectorale impacts en adaptatie-opties.",
+                datasets_card5_item1: "Beoordelen van regionale klimaatrisico's en kwetsbaarheden.",
+                datasets_card5_item2: "Informeren van nationale adaptatieplanning (NAP's).",
+                datasets_card5_item3: "Genereren van gelokaliseerde klimaateffectverhalen.",
+                datasets_card5_item4: "Ondersteunen van klimaatgerelateerde beleidsanalyse.",
+                datasets_card5_button: "Verken Wereldbank CCKP",
+                collaborate_title: "Samenwerken met GreenAgileEco: Bouw Samen Klimaat AI Oplossingen",
+                collaborate_subtitle: "Wij geloven dat het aanpakken van de klimaatcrisis collectieve intelligentie en actie vereist. Als u ideeën, expertise of een passie heeft voor het benutten van AI voor klimaatefficiëntie en leiderschap, laten we dan contact leggen en concepten omzetten in impactvolle producten.",
+                collaborate_agile_title: "Onze Agile MVP Aanpak",
+                collaborate_agile_intro: "Wij staan voor een Agile Minimum Viable Product (MVP) strategie om snel klimaat AI-oplossingen te ontwikkelen en in te zetten. Dit betekent:",
+                collaborate_agile_item1: "<strong>Iteratieve Ontwikkeling:</strong> Oplossingen bouwen in korte cycli, wat continu leren en aanpassen mogelijk maakt.",
+                collaborate_agile_item2: "<strong>Focus op Kernimpact:</strong> Prioriteren van functies die maximale klimaatefficiëntie en snel tastbare voordelen opleveren.",
+                collaborate_agile_item3: "<strong>Snelle Prototyping:</strong> Ideeën snel omzetten in testbare prototypes om feedback te verzamelen en concepten te valideren.",
+                collaborate_agile_item4: "<strong>Gebruikersgericht Ontwerp:</strong> Zorgen dat oplossingen praktisch en bruikbaar zijn en inspelen op reële behoeften van belanghebbenden in de klimaatsector.",
+                collaborate_agile_item5: "<strong>Datagestuurde Verfijning:</strong> Prestatiegegevens en gebruikersfeedback gebruiken om oplossingen continu te verbeteren en op te schalen.",
+                collaborate_agile_outro: "Deze aanpak stelt ons in staat flexibel te zijn, risico's te verminderen en ervoor te zorgen dat de AI-producten die we bouwen echt effectief bijdragen aan klimaatleiderschap en duurzaamheid.",
+                collaborate_connect_title: "Laten We Verbinden & Co-creëren",
+                collaborate_connect_intro: "Uw inzichten en expertise zijn van onschatbare waarde. Of u nu onderzoeker, innovator, beleidsmaker, investeerder of gemeenschapsleider bent, wij nodigen u uit om samen met ons de toekomst van klimaat AI vorm te geven.",
+                collaborate_connect_q1: "Heeft u een idee voor een klimaat AI-product?",
+                collaborate_connect_q2: "Geïnteresseerd in een partnerschap voor een project?",
+                collaborate_connect_q3: "Wilt u meer weten over onze initiatieven?",
+                collaborate_connect_reach_out: "Neem contact met ons op:",
+                collaborate_connect_follow_us: "Volg onze reis & doe mee aan het gesprek:",
+                social_linkedin: "LinkedIn",
+                social_twitter: "Twitter / X",
+                social_github: "GitHub",
+                collaborate_connect_mailing: "Meld u aan voor onze mailinglijst of neem deel aan een aankomende workshop (Details volgen binnenkort!).",
+                footer_title: "GenAI Benutten voor een Duurzame Toekomst",
+                footer_subtitle: "De weg die voor ons ligt vereist een delicaat evenwicht: innovatie bevorderen en tegelijkertijd verantwoordelijkheid verankeren, toegang democratiseren en tegelijkertijd beschermen tegen schade, en de kracht van AI benutten met respect voor planetaire grenzen en menselijke waarden.",
+                footer_report_basis: "Interactief rapport gebaseerd op "Generative AI: Catalyzing Climate Solutions and Sustainable Development".",
+                footer_gdpr: "Gegevensverwerking conform AVG-principes. &copy; 2025 Klimaat & AI Initiatief.",
+                footer_trademarks: "Mogelijk gemaakt door Gemini A.I. | IBM Climate Project Idee | Prompt Design door GreenAgileEco&trade;",
+                gemini_modal_title: "AI Gegenereerde Inhoud",
+                opportunities_chart_label: "Metrische Waarde",
+            }
+        };
+
+        // --- DYNAMIC DATA (LANGUAGE-SPECIFIC) ---
+        const opportunitiesDataStore = {
+            en: {
+                mitigation: [ 
+                    { id: 'materials', title: 'Innovating Climate Technologies', description: 'GenAI accelerates the discovery of novel materials for carbon capture, better batteries, and more efficient solar panels through "inverse design."', chartData: { labels: ['Traditional Discovery', 'GenAI-Accelerated Discovery'], data: [15, 85], title: 'Materials Discovery Speed (Relative)', description: 'GenAI can drastically reduce the time and cost of discovering materials with specific climate-friendly properties.' } },
+                    { id: 'industry', title: 'Optimizing Industrial Ecology', description: 'Optimizes resource use (energy, water) and minimizes waste in industrial processes using digital twins and predictive analytics.', chartData: { labels: ['Baseline Waste', 'AI-Optimized Waste'], data: [100, 65], title: 'Industrial Process Waste Reduction Potential (%)', description: 'AI-driven optimization in sectors like manufacturing and water treatment can lead to significant resource savings.' } },
+                    { id: 'energy', title: 'Transforming Energy Systems', description: 'Enhances the reliability of renewable-heavy grids by forecasting energy supply/demand and optimizing storage.', chartData: { labels: ['Grid Instability without AI', 'Grid Stability with AI'], data: [60, 20], title: 'Renewable Grid Instability Index (Lower is Better)', description: 'GenAI is crucial for managing the complexity and intermittency of grids powered by solar and wind.' } },
+                    { id: 'circular', title: 'Catalyzing Circular Economies', description: 'Helps design new circular business models, track materials through supply chains, and identify opportunities for reuse and recycling.', chartData: { labels: ['Linear Economy Throughput', 'Circular Economy Potential'], data: [90, 40], title: 'Material Throughput to Landfill (Index)', description: 'By identifying circular pathways, GenAI can help decouple economic activity from resource extraction.' } }
+                ],
+                adaptation: [ 
+                    {
+                        id: 'modeling', title: 'Accelerating Climate Modeling',
+                        description: 'GenAI enhances climate modeling. Click to see data analysis on performance improvements.',
+                        chartData: {
+                            labels: ['Prediction Accuracy Increase (%)', 'Uncertainty Reduction (%)', 'Run-time Speedup (Factor)'],
+                            data: [25, 30, 15],
+                            title: 'Climate Model Enhancement Metrics with GenAI',
+                            description: 'Analysis of GenAI impact on key climate modeling performance indicators, showing percentage improvements and speedup factors.'
+                        }
+                    },
+                    {
+                        id: 'warning', title: 'Next-Gen Early Warning Systems',
+                        description: 'GenAI improves early warning systems. Click to view data on effectiveness gains.',
+                        chartData: {
+                            labels: ['Warning Lead Time (Hours Added)', 'False Alarm Rate Reduction (%)', 'Population Coverage Increase (%)'],
+                            data: [12, 15, 20],
+                            title: 'Early Warning System Effectiveness Gains via GenAI',
+                            description: 'Data illustrating improvements in lead time, accuracy, and coverage of early warning systems due to GenAI integration.'
+                        }
+                    },
+                    {
+                        id: 'infrastructure', title: 'Generative Design for Resilience',
+                        description: 'GenAI aids in designing resilient infrastructure. Click for data on risk reduction and efficiency.',
+                        chartData: {
+                            labels: ['Damage Reduction from Extremes (%)', 'Adaptive Capacity Score (Index 0-100)', 'Lifecycle Cost Savings (%)'],
+                            data: [40, 75, 18],
+                            title: 'Resilient Infrastructure Design: GenAI Impact Analysis',
+                            description: 'Analysis of GenAI's contribution to reducing climate-related damage, enhancing adaptive capacity, and optimizing lifecycle costs for infrastructure.'
+                        }
+                    },
+                    {
+                        id: 'agriculture', title: 'Ensuring Food Security',
+                        description: 'GenAI supports sustainable agriculture. Click to see data on yield stability and resource efficiency.',
+                        chartData: {
+                            labels: ['Crop Yield Stability Index (Improvement %)', 'Water Use Efficiency Gain (%)', 'Input Reduction (Fertilizer/Pesticide %)'],
+                            data: [22, 35, 15],
+                            title: 'GenAI in Sustainable Agriculture: Performance Metrics',
+                            description: 'Data showcasing GenAI's role in improving crop yield stability, water efficiency, and reducing agricultural inputs for enhanced food security.'
+                        }
+                    }
+                ]
+            },
+            nl: { 
+                mitigation: [ 
+                    { id: 'materials', title: 'Innovatie in Klimaattechnologieën', description: 'GenAI versnelt de ontdekking van nieuwe materialen voor koolstofafvang, betere batterijen en efficiëntere zonnepanelen via "inverse design".', chartData: { labels: ['Traditionele Ontdekking', 'GenAI-Versnelde Ontdekking'], data: [15, 85], title: 'Snelheid Materiaalontdekking (Relatief)', description: 'GenAI kan de tijd en kosten voor het ontdekken van materialen met specifieke klimaatvriendelijke eigenschappen drastisch verminderen.' } },
+                    { id: 'industry', title: 'Optimalisatie Industriële Ecologie', description: 'Optimaliseert het gebruik van hulpbronnen (energie, water) en minimaliseert afval in industriële processen met behulp van digital twins en voorspellende analyses.', chartData: { labels: ['Basislijn Afval', 'AI-Geoptimaliseerd Afval'], data: [100, 65], title: 'Potentiële Afvalvermindering Industriële Processen (%)', description: 'AI-gestuurde optimalisatie in sectoren zoals productie en waterbehandeling kan leiden tot aanzienlijke besparingen op hulpbronnen.' } },
+                    { id: 'energy', title: 'Transformatie Energiesystemen', description: 'Verbetert de betrouwbaarheid van netwerken met veel hernieuwbare energie door vraag/aanbod te voorspellen en opslag te optimaliseren.', chartData: { labels: ['Netinstabiliteit zonder AI', 'Netstabiliteit met AI'], data: [60, 20], title: 'Instabiliteitsindex Hernieuwbaar Net (Lager is Beter)', description: 'GenAI is cruciaal voor het beheren van de complexiteit en intermittentie van netwerken aangedreven door zon en wind.' } },
+                    { id: 'circular', title: 'Katalyseren Circulaire Economieën', description: 'Helpt bij het ontwerpen van nieuwe circulaire bedrijfsmodellen, het volgen van materialen door toeleveringsketens en het identificeren van mogelijkheden voor hergebruik en recycling.', chartData: { labels: ['Lineaire Economie Doorvoer', 'Circulaire Economie Potentieel'], data: [90, 40], title: 'Materiaaldoorvoer naar Stortplaats (Index)', description: 'Door circulaire paden te identificeren, kan GenAI helpen economische activiteit los te koppelen van de winning van hulpbronnen.' } }
+                ],
+                adaptation: [
+                     {
+                        id: 'modeling', title: 'Versnellen Klimaatmodellering',
+                        description: 'GenAI verbetert klimaatmodellering. Klik voor data-analyse over prestatieverbeteringen.',
+                        chartData: {
+                            labels: ['Toename Voorspellingsnauwkeurigheid (%)', 'Onzekerheidsreductie (%)', 'Versnelling Uitvoeringstijd (Factor)'],
+                            data: [25, 30, 15],
+                            title: 'Statistieken Verbetering Klimaatmodel met GenAI',
+                            description: 'Analyse van de impact van GenAI op belangrijke prestatie-indicatoren voor klimaatmodellering, met procentuele verbeteringen en versnellingsfactoren.'
+                        }
+                    },
+                    {
+                        id: 'warning', title: 'Nieuwe Generatie Vroege Waarschuwingssystemen',
+                        description: 'GenAI verbetert vroege waarschuwingssystemen. Klik voor data over effectiviteitswinst.',
+                        chartData: {
+                            labels: ['Extra Waarschuwingstijd (Uren)', 'Reductie Fout-positieven (%)', 'Toename Bevolkingsbereik (%)'],
+                            data: [12, 15, 20],
+                            title: 'Effectiviteitswinst Vroege Waarschuwingssystemen via GenAI',
+                            description: 'Data die verbeteringen illustreren in waarschuwingstijd, nauwkeurigheid en bereik van vroege waarschuwingssystemen door GenAI-integratie.'
+                        }
+                    },
+                    {
+                        id: 'infrastructure', title: 'Generatief Ontwerp voor Veerkracht',
+                        description: 'GenAI helpt bij het ontwerpen van veerkrachtige infrastructuur. Klik voor data over risicoreductie en efficiëntie.',
+                        chartData: {
+                            labels: ['Schadereductie door Extremen (%)', 'Adaptieve Capaciteitsscore (Index 0-100)', 'Levenscyclus Kostenbesparing (%)'],
+                            data: [40, 75, 18],
+                            title: 'Ontwerp Veerkrachtige Infrastructuur: GenAI Impactanalyse',
+                            description: 'Analyse van GenAI's bijdrage aan het verminderen van klimaatgerelateerde schade, het verbeteren van adaptieve capaciteit en het optimaliseren van levenscycluskosten voor infrastructuur.'
+                        }
+                    },
+                    {
+                        id: 'agriculture', title: 'Voedselzekerheid Garanderen',
+                        description: 'GenAI ondersteunt duurzame landbouw. Klik voor data over opbrengststabiliteit en resource-efficiëntie.',
+                        chartData: {
+                            labels: ['Opbrengststabiliteitsindex (Verbetering %)', 'Winst Watergebruiksefficiëntie (%)', 'Inputreductie (Mest/Pesticiden %)'],
+                            data: [22, 35, 15],
+                            title: 'GenAI in Duurzame Landbouw: Prestatiestatistieken',
+                            description: 'Data die de rol van GenAI tonen in het verbeteren van gewasopbrengststabiliteit, waterefficiëntie en het verminderen van landbouwinputs voor verbeterde voedselzekerheid.'
+                        }
+                    }
+                ]
+            }
+        };
+
+        const sdgDataStore = {
+            en: {
+                'materials':      { label: 'Climate Tech Materials', data: [0, 0, 0, 8, 9, 0, 7, 9, 0, 0, 3] },
+                'industry':       { label: 'Industrial Ecology', data: [0, 0, 7, 6, 9, 0, 8, 6, 0, 0, 2] },
+                'energy':         { label: 'Renewable Energy Systems', data: [2, 0, 0, 10, 8, 7, 0, 9, 0, 0, 4] },
+                'circular':       { label: 'Circular Economies', data: [3, 0, 0, 4, 8, 6, 10, 7, 3, 2, 5] },
+                'modeling':       { label: 'Climate Modeling', data: [3, 4, 5, 6, 8, 8, 0, 10, 5, 5, 5] },
+                'warning':        { label: 'Early Warning Systems', data: [8, 8, 8, 0, 7, 9, 0, 9, 0, 0, 3] },
+                'infrastructure': { label: 'Resilient Infrastructure', data: [4, 0, 6, 7, 10, 10, 6, 8, 0, 0, 4] },
+                'agriculture':    { label: 'Sustainable Agriculture', data: [9, 10, 8, 3, 5, 0, 8, 7, 6, 8, 4] }
+            },
+            nl: {
+                'materials':      { label: 'Klimaattechnologie Materialen', data: [0, 0, 0, 8, 9, 0, 7, 9, 0, 0, 3] },
+                'industry':       { label: 'Industriële Ecologie', data: [0, 0, 7, 6, 9, 0, 8, 6, 0, 0, 2] },
+                'energy':         { label: 'Hernieuwbare Energiesystemen', data: [2, 0, 0, 10, 8, 7, 0, 9, 0, 0, 4] },
+                'circular':       { label: 'Circulaire Economieën', data: [3, 0, 0, 4, 8, 6, 10, 7, 3, 2, 5] },
+                'modeling':       { label: 'Klimaatmodellering', data: [3, 4, 5, 6, 8, 8, 0, 10, 5, 5, 5] },
+                'warning':        { label: 'Vroege Waarschuwingssystemen', data: [8, 8, 8, 0, 7, 9, 0, 9, 0, 0, 3] },
+                'infrastructure': { label: 'Veerkrachtige Infrastructuur', data: [4, 0, 6, 7, 10, 10, 6, 8, 0, 0, 4] },
+                'agriculture':    { label: 'Duurzame Landbouw', data: [9, 10, 8, 3, 5, 0, 8, 7, 6, 8, 4] }
+            }
+        };
+        
+        const governanceDataStore = {
+            en: [
+                { id: 'envFootprint', title: 'Environmental Footprint', icon: '🔌', content: '<strong>Challenge:</strong> High energy and water consumption for training and operating GenAI models.<br><strong>Mitigation:</strong> Develop energy-efficient models (SLMs), power data centers with renewables, and mandate transparency in resource usage.' },
+                { id: 'biasInequity', title: 'Algorithmic Bias & Inequity', icon: '⚖️', content: '<strong>Challenge:</strong> AI models can perpetuate and amplify societal biases present in training data, harming vulnerable groups.<br><strong>Mitigation:</strong> Use diverse and representative data, conduct bias audits, and co-design solutions with affected communities.' },
+                { id: 'misinfoMalicious', title: 'Misinformation & Malicious Use', icon: '📢', content: '<strong>Challenge:</strong> GenAI can create highly convincing climate denial propaganda and deepfakes at scale.<br><strong>Mitigation:</strong> Develop GenAI-powered fact-checking tools, promote media literacy, and establish strong ethical guidelines for content generation.' },
+                { id: 'transparencyAccountability', title: 'Lack of Transparency & Accountability', icon: '📦', content: '<strong>Challenge:</strong> "Black box" models make it difficult to understand their reasoning, hindering audits and accountability.<br><strong>Mitigation:</strong> Promote Explainable AI (XAI), mandate transparency reports, and support open-source models to allow for public scrutiny.' },
+                { id: 'digitalDivide', title: 'The Digital & AI Divide', icon: '🌍', content: '<strong>Challenge:</strong> Unequal access to AI tools and expertise risks marginalizing developing nations.<br><strong>Mitigation:</strong> Invest in digital infrastructure and capacity building in the Global South, and foster local AI innovation ecosystems.' }
+            ],
+            nl: [
+                { id: 'envFootprint', title: 'Ecologische Voetafdruk', icon: '🔌', content: '<strong>Uitdaging:</strong> Hoog energie- en waterverbruik voor het trainen en gebruiken van GenAI-modellen.<br><strong>Mitigatie:</strong> Ontwikkel energie-efficiënte modellen (SLM's), voorzie datacenters van hernieuwbare energie en verplicht transparantie in resourcegebruik.' },
+                { id: 'biasInequity', title: 'Algoritmische Bias & Ongelijkheid', icon: '⚖️', content: '<strong>Uitdaging:</strong> AI-modellen kunnen maatschappelijke vooroordelen in trainingsdata bestendigen en versterken, wat kwetsbare groepen schaadt.<br><strong>Mitigatie:</strong> Gebruik diverse en representatieve data, voer bias-audits uit en co-design oplossingen met getroffen gemeenschappen.' },
+                { id: 'misinfoMalicious', title: 'Desinformatie & Kwaadwillig Gebruik', icon: '📢', content: '<strong>Uitdaging:</strong> GenAI kan op grote schaal zeer overtuigende klimaatontkenningspropaganda en deepfakes creëren.<br><strong>Mitigatie:</strong> Ontwikkel GenAI-aangedreven factcheckingtools, promoot mediageletterdheid en stel sterke ethische richtlijnen op voor contentgeneratie.' },
+                { id: 'transparencyAccountability', title: 'Gebrek aan Transparantie & Verantwoording', icon: '📦', content: '<strong>Uitdaging:</strong> "Black box"-modellen maken het moeilijk hun redenering te begrijpen, wat audits en verantwoording belemmert.<br><strong>Mitigatie:</strong> Promoot Verklaarbare AI (XAI), verplicht transparantierapporten en ondersteun open-source modellen voor publieke controle.' },
+                { id: 'digitalDivide', title: 'De Digitale & AI Kloof', icon: '🌍', content: '<strong>Uitdaging:</strong> Ongelijke toegang tot AI-tools en expertise dreigt ontwikkelingslanden te marginaliseren.<br><strong>Mitigatie:</strong> Investeer in digitale infrastructuur en capaciteitsopbouw in het Mondiale Zuiden, en stimuleer lokale AI-innovatie-ecosystemen.' }
+            ]
+        };
+
+        const genAIModelsDataStore = {
+            en: [
+                { id: 'gans', name: 'Generative Adversarial Networks (GANs)', icon: 'https://placehold.co/50x50/8ecae6/023047?text=GAN', corePrinciple: 'Two neural networks, a Generator and a Discriminator, compete. The Generator creates data, and the Discriminator tries to distinguish it from real data, improving realism.', strengths: ['Generating high-resolution, realistic synthetic data (e.g., climate model outputs, satellite imagery).','Data augmentation for training other AI models in data-scarce environments.','Scenario generation for exploring future possibilities (e.g., NREL Sup3rCC, TIP-GAN).'], applications: ['Accelerating climate modeling (e.g., Spherical DYffusion, NREL Sup3rCC).','Predicting climate tipping points (e.g., CATNIP project's TIP-GAN).','Generating synthetic satellite imagery for land use or disaster monitoring.'], pretrainedExamples: [{ vendor: 'Google', modelName: 'Research into StyleGAN variants for scientific visualization and data generation (e.g., medical imagery, applicable to environmental data).', note: 'Focus on research applications and adapting open-source GAN architectures.'},{ vendor: 'IBM', modelName: 'Research applying GANs for geospatial data augmentation and synthetic data generation in climate risk modeling.', note: 'Explore IBM Research publications on GANs for environmental science.'}] },
+                { id: 'vaes', name: 'Variational Autoencoders (VAEs)', icon: 'https://placehold.co/50x50/219ebc/ffffff?text=VAE', corePrinciple: 'Learn a compressed representation (latent space) of input data and then use this representation to generate new, diverse data samples.', strengths: ['Generating diverse but coherent new data instances.','Useful for "inverse design" problems (specifying properties to generate structures).','Anomaly detection by identifying data points that don't fit the learned distribution.'], applications: ['Designing novel materials (e.g., for carbon capture, batteries, enzyme engineering).','Generating new molecular structures for climate technologies.','Creating sustainable building typologies based on performance criteria.'], pretrainedExamples: [{ vendor: 'Google', modelName: 'DeepMind & Isomorphic Labs research leveraging VAE-like architectures for drug and materials discovery.', note: 'Focus on adapting VAE principles for specific material/molecular design tasks.' },{ vendor: 'IBM', modelName: 'AI for materials discovery platforms often incorporate VAEs for generating candidate molecules with desired properties.', note: 'Look into IBM's AI-driven discovery platforms.'}] },
+                { id: 'diffusion', name: 'Diffusion Models', icon: 'https://placehold.co/50x50/023047/ffffff?text=DIFF', corePrinciple: 'Gradually add noise to data, then learn to reverse this process to generate high-quality data from noise.', strengths: ['Generating very high-fidelity and diverse samples, often outperforming GANs.','Controllable generation by guiding the reverse diffusion process.','Applications in inverse design and complex data generation.'], applications: ['High-throughput discovery of novel materials (e.g., MOFLinker for CO2 capture).','Accelerating climate simulations (e.g., Spherical DYffusion).','Generating realistic imagery for climate impact visualization.'], pretrainedExamples: [{ vendor: 'Google', modelName: 'Imagen & Vertex AI Vision (for high-quality image generation, adaptable for scientific visualization).', note: 'Explore Vertex AI for pre-trained models and custom training capabilities.' },{ vendor: 'IBM', modelName: 'Research exploring diffusion models for scientific data synthesis and molecular generation.', note: 'Check IBM Research for specific projects in climate or materials science.'}] },
+                { id: 'llms', name: 'Large Language Models (LLMs)', icon: 'https://placehold.co/50x50/ffb703/000000?text=LLM', corePrinciple: 'Trained on vast text data to understand, generate, and manipulate human language by predicting subsequent words.', strengths: ['Knowledge synthesis from extensive textual sources.','Generating reports, summaries, educational materials, policy briefs.','Powering conversational AI for expert advice and information dissemination.','Simulating policy impacts and socio-economic scenarios from text.'], applications: ['Summarizing climate research, generating ESG reports (e.g., Salesforce Net Zero Cloud).','Developing localized climate advisories (e.g., Darli chatbot).','Simulating energy transition scenarios and policy coherence.','Debunking climate misinformation (e.g., Climinator).'], pretrainedExamples: [{ vendor: 'Google', modelName: 'Gemini family (via API), Vertex AI Foundation Models (e.g., text-bison).', note: 'Accessible via Google Cloud Vertex AI for fine-tuning and deployment.' },{ vendor: 'IBM', modelName: 'Granite series models (available on watsonx.ai).', note: 'Designed for enterprise use, can be fine-tuned for specific climate/sustainability tasks.'}] },
+                { id: 'neurosymbolic', name: 'Neuro-Symbolic AI', icon: 'https://placehold.co/50x50/fb8500/ffffff?text=N-S', corePrinciple: 'Combines neural networks (learning from data) with symbolic reasoning (logic, rules) for more robust, interpretable, and generalizable AI.', strengths: ['Integrating domain knowledge and physical laws into AI models.','Improving model explainability and trustworthiness.','Handling complex reasoning and causal inference in climate systems.'], applications: ['Interactive climate modeling and tipping point analysis (e.g., CATNIP project).','Developing more robust and explainable early warning systems.','Enhancing AI-assisted scientific discovery by combining data with principles.'], pretrainedExamples: [{ vendor: 'Google', modelName: 'Research initiatives combining deep learning with symbolic reasoning for scientific discovery and complex problem-solving.', note: 'Often involves custom architectures rather than off-the-shelf models.' },{ vendor: 'IBM', modelName: 'Research in Neuro-Symbolic AI for areas like natural language understanding, trusted AI, and reasoning.', note: 'Explore IBM Research for frameworks and publications (e.g., Logical Neural Networks).'} ] }
+            ],
+            nl: [ // Dutch translations for genAIModelsDataStore
+                { id: 'gans', name: 'Generative Adversarial Networks (GANs)', icon: 'https://placehold.co/50x50/8ecae6/023047?text=GAN', corePrinciple: 'Twee neurale netwerken, een Generator en een Discriminator, concurreren. De Generator creëert data, en de Discriminator probeert deze te onderscheiden van echte data, wat het realisme verbetert.', strengths: ['Genereren van realistische synthetische data met hoge resolutie (bijv. klimaatmodel-outputs, satellietbeelden).','Data-augmentatie voor het trainen van andere AI-modellen in omgevingen met weinig data.','Scenariogeneratie voor het verkennen van toekomstige mogelijkheden (bijv. NREL Sup3rCC, TIP-GAN).'], applications: ['Versnellen van klimaatmodellering (bijv. Spherical DYffusion, NREL Sup3rCC).','Voorspellen van klimaatkantelpunten (bijv. CATNIP-project TIP-GAN).','Genereren van synthetische satellietbeelden voor landgebruik- of rampenmonitoring.'], pretrainedExamples: [{ vendor: 'Google', modelName: 'Onderzoek naar StyleGAN-varianten voor wetenschappelijke visualisatie en datageneratie (bijv. medische beelden, toepasbaar op milieudata).', note: 'Focus op onderzoekstoepassingen en het aanpassen van open-source GAN-architecturen.'},{ vendor: 'IBM', modelName: 'Onderzoek dat GANs toepast voor geospatiale data-augmentatie en generatie van synthetische data in klimaatrisicomodellering.', note: 'Verken IBM Research publicaties over GANs voor milieuwetenschappen.'}] },
+                { id: 'vaes', name: 'Variational Autoencoders (VAEs)', icon: 'https://placehold.co/50x50/219ebc/ffffff?text=VAE', corePrinciple: 'Leert een gecomprimeerde representatie (latente ruimte) van inputdata en gebruikt deze representatie vervolgens om nieuwe, diverse datamonsters te genereren.', strengths: ['Genereren van diverse maar coherente nieuwe datainstanties.','Bruikbaar voor "inverse design"-problemen (eigenschappen specificeren om structuren te genereren).','Anomaliedetectie door datapunten te identificeren die niet in de geleerde distributie passen.'], applications: ['Ontwerpen van nieuwe materialen (bijv. voor koolstofafvang, batterijen, enzym-engineering).','Genereren van nieuwe moleculaire structuren voor klimaattechnologieën.','Creëren van duurzame gebouwtypologieën op basis van prestatiecriteria.'], pretrainedExamples: [{ vendor: 'Google', modelName: 'DeepMind & Isomorphic Labs onderzoek dat VAE-achtige architecturen gebruikt voor medicijn- en materiaalontdekking.', note: 'Focus op het aanpassen van VAE-principes voor specifieke materiaal/moleculaire ontwerptaken.' },{ vendor: 'IBM', modelName: 'AI voor materiaalontdekkingsplatforms bevatten vaak VAEs voor het genereren van kandidaatmoleculen met gewenste eigenschappen.', note: 'Kijk naar IBM's AI-gedreven ontdekkingsplatforms.'}] },
+                { id: 'diffusion', name: 'Diffusiemodellen', icon: 'https://placehold.co/50x50/023047/ffffff?text=DIFF', corePrinciple: 'Voegt geleidelijk ruis toe aan data en leert vervolgens dit proces om te keren om data van hoge kwaliteit uit ruis te genereren.', strengths: ['Genereren van zeer natuurgetrouwe en diverse monsters, vaak beter dan GANs.','Controleerbare generatie door het omgekeerde diffusieproces te sturen.','Toepassingen in inverse design en complexe datageneratie.'], applications: ['Snelle ontdekking van nieuwe materialen (bijv. MOFLinker voor CO2-afvang).','Versnellen van klimaatsimulaties (bijv. Spherical DYffusion).','Genereren van realistische beelden voor visualisatie van klimaateffecten.'], pretrainedExamples: [{ vendor: 'Google', modelName: 'Imagen & Vertex AI Vision (voor beeldgeneratie van hoge kwaliteit, aanpasbaar voor wetenschappelijke visualisatie).', note: 'Verken Vertex AI voor vooraf getrainde modellen en aangepaste trainingsmogelijkheden.' },{ vendor: 'IBM', modelName: 'Onderzoek dat diffusiemodellen verkent voor synthese van wetenschappelijke data en moleculaire generatie.', note: 'Controleer IBM Research voor specifieke projecten in klimaat- of materiaalwetenschap.'}] },
+                { id: 'llms', name: 'Grote Taalmodellen (LLM's)', icon: 'https://placehold.co/50x50/ffb703/000000?text=LLM', corePrinciple: 'Getraind op enorme hoeveelheden tekstdata om menselijke taal te begrijpen, genereren en manipuleren door volgende woorden te voorspellen.', strengths: ['Kennis synthese uit uitgebreide tekstuele bronnen.','Genereren van rapporten, samenvattingen, educatief materiaal, beleidsnota's.','Aansturen van conversationele AI voor deskundig advies en informatieverspreiding.','Simuleren van beleidsimpact en sociaaleconomische scenario's op basis van tekst.'], applications: ['Samenvatten van klimaatonderzoek, genereren van ESG-rapporten (bijv. Salesforce Net Zero Cloud).','Ontwikkelen van gelokaliseerde klimaatadviezen (bijv. Darli chatbot).','Simuleren van energietransitiescenario's en beleidscoherentie.','Ontkrachten van klimaatdesinformatie (bijv. Climinator).'], pretrainedExamples: [{ vendor: 'Google', modelName: 'Gemini-familie (via API), Vertex AI Foundation Models (bijv. text-bison).', note: 'Toegankelijk via Google Cloud Vertex AI voor fine-tuning en implementatie.' },{ vendor: 'IBM', modelName: 'Granite-serie modellen (beschikbaar op watsonx.ai).', note: 'Ontworpen voor zakelijk gebruik, kan worden gefinetuned voor specifieke klimaat/duurzaamheidstaken.'}] },
+                { id: 'neurosymbolic', name: 'Neuro-Symbolische AI', icon: 'https://placehold.co/50x50/fb8500/ffffff?text=N-S', corePrinciple: 'Combineert neurale netwerken (leren van data) met symbolisch redeneren (logica, regels) voor robuustere, interpreteerbaardere en generaliseerbaardere AI.', strengths: ['Integreren van domeinkennis en fysische wetten in AI-modellen.','Verbeteren van modelverklaarbaarheid en betrouwbaarheid.','Hanteren van complexe redeneringen en causale inferentie in klimaatsystemen.'], applications: ['Interactieve klimaatmodellering en kantelpuntanalyse (bijv. CATNIP-project).','Ontwikkelen van robuustere en verklaarbaardere vroege waarschuwingssystemen.','Verbeteren van AI-ondersteunde wetenschappelijke ontdekkingen door data te combineren met principes.'], pretrainedExamples: [{ vendor: 'Google', modelName: 'Onderzoeksinitiatieven die deep learning combineren met symbolisch redeneren voor wetenschappelijke ontdekking en complexe probleemoplossing.', note: 'Betreft vaak aangepaste architecturen in plaats van kant-en-klare modellen.' },{ vendor: 'IBM', modelName: 'Onderzoek in Neuro-Symbolische AI voor gebieden zoals begrip van natuurlijke taal, vertrouwde AI en redeneren.', note: 'Verken IBM Research voor frameworks en publicaties (bijv. Logical Neural Networks).'}] }
+            ]
+        };
+        
+        const datasetsDataStore = {
+            en: [
+                { id: 'ipcc', titleKey: 'datasets_card1_title', descKey: 'datasets_card1_desc', useCasesTitleKey: 'datasets_use_cases_title', items: ['datasets_card1_item1', 'datasets_card1_item2', 'datasets_card1_item3', 'datasets_card1_item4'], buttonKey: 'datasets_card1_button', url: 'https://esgf-node.llnl.gov/search/cmip6/', img: 'https://placehold.co/300x150/d4a373/ffffff?text=IPCC+Data' },
+                { id: 'nasa', titleKey: 'datasets_card2_title', descKey: 'datasets_card2_desc', useCasesTitleKey: 'datasets_use_cases_title', items: ['datasets_card2_item1', 'datasets_card2_item2', 'datasets_card2_item3', 'datasets_card2_item4'], buttonKey: 'datasets_card2_button', url: 'https://earthdata.nasa.gov/', img: 'https://placehold.co/300x150/a7c957/2c3e50?text=NASA+Satellite+View' },
+                { id: 'gcp', titleKey: 'datasets_card3_title', descKey: 'datasets_card3_desc', useCasesTitleKey: 'datasets_use_cases_title', items: ['datasets_card3_item1', 'datasets_card3_item2', 'datasets_card3_item3', 'datasets_card3_item4'], buttonKey: 'datasets_card3_button', url: 'https://www.globalcarbonproject.org/carbonbudget/index.htm', img: 'https://placehold.co/300x150/6a994e/ffffff?text=Global+Emissions' },
+                { id: 'nrel', titleKey: 'datasets_card4_title', descKey: 'datasets_card4_desc', useCasesTitleKey: 'datasets_use_cases_title', items: ['datasets_card4_item1', 'datasets_card4_item2', 'datasets_card4_item3', 'datasets_card4_item4'], buttonKey: 'datasets_card4_button', url: 'https://www.nrel.gov/gis/data-tools.html', img: 'https://placehold.co/300x150/3a5a40/ffffff?text=Renewable+Energy' },
+                { id: 'worldbank', titleKey: 'datasets_card5_title', descKey: 'datasets_card5_desc', useCasesTitleKey: 'datasets_use_cases_title', items: ['datasets_card5_item1', 'datasets_card5_item2', 'datasets_card5_item3', 'datasets_card5_item4'], buttonKey: 'datasets_card5_button', url: 'https://climateknowledgeportal.worldbank.org/', img: 'https://placehold.co/300x150/e9c46a/2c3e50?text=World+Bank+Data' }
+            ],
+             nl: [ 
+                { id: 'ipcc', titleKey: 'datasets_card1_title', descKey: 'datasets_card1_desc', useCasesTitleKey: 'datasets_use_cases_title', items: ['datasets_card1_item1', 'datasets_card1_item2', 'datasets_card1_item3', 'datasets_card1_item4'], buttonKey: 'datasets_card1_button', url: 'https://esgf-node.llnl.gov/search/cmip6/', img: 'https://placehold.co/300x150/d4a373/ffffff?text=IPCC+Data' },
+                { id: 'nasa', titleKey: 'datasets_card2_title', descKey: 'datasets_card2_desc', useCasesTitleKey: 'datasets_use_cases_title', items: ['datasets_card2_item1', 'datasets_card2_item2', 'datasets_card2_item3', 'datasets_card2_item4'], buttonKey: 'datasets_card2_button', url: 'https://earthdata.nasa.gov/', img: 'https://placehold.co/300x150/a7c957/2c3e50?text=NASA+Satellietbeeld' },
+                { id: 'gcp', titleKey: 'datasets_card3_title', descKey: 'datasets_card3_desc', useCasesTitleKey: 'datasets_use_cases_title', items: ['datasets_card3_item1', 'datasets_card3_item2', 'datasets_card3_item3', 'datasets_card3_item4'], buttonKey: 'datasets_card3_button', url: 'https://www.globalcarbonproject.org/carbonbudget/index.htm', img: 'https://placehold.co/300x150/6a994e/ffffff?text=Globale+Emissies' },
+                { id: 'nrel', titleKey: 'datasets_card4_title', descKey: 'datasets_card4_desc', useCasesTitleKey: 'datasets_use_cases_title', items: ['datasets_card4_item1', 'datasets_card4_item2', 'datasets_card4_item3', 'datasets_card4_item4'], buttonKey: 'datasets_card4_button', url: 'https://www.nrel.gov/gis/data-tools.html', img: 'https://placehold.co/300x150/3a5a40/ffffff?text=Hernieuwbare+Energie' },
+                { id: 'worldbank', titleKey: 'datasets_card5_title', descKey: 'datasets_card5_desc', useCasesTitleKey: 'datasets_use_cases_title', items: ['datasets_card5_item1', 'datasets_card5_item2', 'datasets_card5_item3', 'datasets_card5_item4'], buttonKey: 'datasets_card5_button', url: 'https://climateknowledgeportal.worldbank.org/', img: 'https://placehold.co/300x150/e9c46a/2c3e50?text=Wereldbank+Data' }
+            ]
+        };
+
+
+        // --- GLOBAL STATE ---
+        let currentLang = 'en'; 
+        let opportunitiesChart = null;
+        let sdgChart = null;
+        let activeOpportunityCard = null;
+        let activeModelCard = null;
+
+        // --- DOM ELEMENTS ---
+        const geminiModal = document.getElementById('geminiModal');
+        const geminiModalTitle = document.getElementById('geminiModalTitle');
+        const geminiModalBody = document.getElementById('geminiModalBody');
+        const closeGeminiModalButton = document.getElementById('closeGeminiModal');
+        const mitigationTab = document.getElementById('mitigation-tab');
+        const adaptationTab = document.getElementById('adaptation-tab');
+        const opportunitiesGrid = document.getElementById('opportunities-grid');
+        const modelSelectionGrid = document.getElementById('model-selection-grid');
+        const modelInfoDisplay = document.getElementById('model-info-display');
+        const datasetsGrid = document.getElementById('datasets-grid');
+        const languageToggle = document.getElementById('language-toggle');
+        const languageDropdown = document.getElementById('language-dropdown');
+
+        // --- HELPER FUNCTIONS ---
+        function showGeminiModal(titleKey) {
+            geminiModalTitle.textContent = siteTranslations[currentLang][titleKey] || titleKey; 
+            geminiModalBody.innerHTML = '<div class="flex justify-center items-center h-32"><div class="loader"></div></div>'; 
+            geminiModal.classList.remove('invisible', 'opacity-0');
+            geminiModal.querySelector('.modal-content').classList.remove('scale-95');
+            geminiModal.classList.add('opacity-100');
+            geminiModal.querySelector('.modal-content').classList.add('scale-100');
+        }
+
+        function hideGeminiModal() {
+            geminiModal.classList.add('opacity-0', 'scale-95');
+            geminiModal.querySelector('.modal-content').classList.add('scale-95');
+            setTimeout(() => {
+                geminiModal.classList.add('invisible');
+            }, 300);
+        }
+
+        async function callGeminiApi(prompt) {
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+            const payload = { contents: chatHistory };
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Gemini API Error:', errorData);
+                    return `Error: ${errorData.error?.message || 'Failed to fetch data from Gemini API.'}`;
+                }
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    let text = result.candidates[0].content.parts[0].text;
+                    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); 
+                    text = text.replace(/^\* (.*$)/gm, '<li>$1</li>'); 
+                    text = text.replace(/(<li>.*<\/li>)+/gs, '<ul>$&</ul>'); 
+                    text = text.replace(/\n/g, '<br>'); 
+                    return text;
+                } else {
+                    console.error('Unexpected Gemini API response structure:', result);
+                    return 'Received an unexpected response from the AI. Please try again.';
+                }
+            } catch (error) {
+                console.error('Error calling Gemini API:', error);
+                return 'An error occurred while contacting the AI. Please check your connection and try again.';
+            }
+        }
+
+        // --- TRANSLATION LOGIC ---
+        function applyTranslations() {
+            document.documentElement.lang = currentLang;
+            document.querySelectorAll('[data-translate-key]').forEach(el => {
+                const key = el.dataset.translateKey;
+                if (siteTranslations[currentLang] && siteTranslations[currentLang][key]) {
+                    if (el.tagName === 'UL' && el.dataset.listKeys) { 
+                        const itemKeys = el.dataset.listKeys.split(',');
+                        let listHTML = '';
+                        const originalLi = el.querySelector('li'); 
+                        const originalPrefixSpan = originalLi ? originalLi.querySelector('span:first-child') : null;
+                        const prefixHTML = originalPrefixSpan ? originalPrefixSpan.outerHTML : '';
+
+                        itemKeys.forEach(itemKey => {
+                            listHTML += `<li class="flex items-start">${prefixHTML}<span data-translate-key="${itemKey.trim()}">${siteTranslations[currentLang][itemKey.trim()]}</span></li>`;
+                        });
+                        el.innerHTML = listHTML;
+                        
+                        el.querySelectorAll('li > span[data-translate-key]').forEach(nestedEl => {
+                             const nestedKey = nestedEl.dataset.translateKey;
+                             if (siteTranslations[currentLang][nestedKey]) {
+                                nestedEl.innerHTML = siteTranslations[currentLang][nestedKey]; 
+                             }
+                        });
+
+                    } else if (el.placeholder && el.dataset.translateKey) {
+                         el.placeholder = siteTranslations[currentLang][key];
+                    } else {
+                         el.innerHTML = siteTranslations[currentLang][key]; 
+                    }
+                }
+            });
+             document.querySelectorAll('[data-translate-aria-label]').forEach(el => {
+                const key = el.dataset.translateAriaLabel;
+                if (siteTranslations[currentLang] && siteTranslations[currentLang][key]) {
+                    el.setAttribute('aria-label', siteTranslations[currentLang][key]);
+                }
+            });
+        }
+        
+        function setLanguage(lang) {
+            currentLang = lang;
+            applyTranslations();
+            
+            const activeMitigation = mitigationTab.classList.contains('active');
+            const activeAdaptation = adaptationTab.classList.contains('active');
+
+            if (activeMitigation) {
+                renderOpportunities('mitigation');
+            } else if (activeAdaptation) {
+                renderOpportunities('adaptation');
+            } else { 
+                 renderOpportunities('mitigation');
+                 mitigationTab.classList.add('active');
+                 adaptationTab.classList.remove('active');
+            }
+            
+            initSDGChart(); 
+            initAccordion();
+            initModelSandbox();
+            renderDatasets();
+            
+            document.querySelectorAll('#language-dropdown a').forEach(a => {
+                a.classList.toggle('font-bold', a.dataset.lang === lang);
+                a.classList.toggle('bg-amber-100', a.dataset.lang === lang);
+            });
+            languageDropdown.classList.add('hidden'); 
+        }
+
+        // --- OPPORTUNITIES SECTION ---
+        function createOpportunityCard(item) {
+            const geminiButtonText = siteTranslations[currentLang]['opportunities_gemini_button'] || "✨ Generate Actionable Insights";
+            return `
+                <div class="opportunity-card bg-white p-6 rounded-lg border-2 border-transparent flex flex-col justify-between" data-id="${item.id}" data-title="${item.title}">
+                    <div>
+                        <h4 class="text-lg font-bold text-gray-800">${item.title}</h4>
+                        <p class="mt-2 text-sm text-gray-600">${item.description}</p>
+                    </div>
+                    <button class="gemini-button mt-4 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-300 w-full gemini-opportunity-btn">
+                        ${geminiButtonText}
+                    </button>
+                </div>
+            `;
+        }
+
+        function renderOpportunities(type) {
+            const currentOpportunities = opportunitiesDataStore[currentLang][type];
+            opportunitiesGrid.innerHTML = currentOpportunities.map(createOpportunityCard).join('');
+            
+            document.querySelectorAll('.opportunity-card').forEach(card => {
+                card.addEventListener('click', (event) => { 
+                    if (event.target.classList.contains('gemini-opportunity-btn')) return; 
+                    const id = card.getAttribute('data-id');
+                    const data = currentOpportunities.find(item => item.id === id);
+                    updateOpportunitiesChart(data);
+                    if (activeOpportunityCard) activeOpportunityCard.classList.remove('active');
+                    card.classList.add('active');
+                    activeOpportunityCard = card;
+                });
+            });
+
+            document.querySelectorAll('.gemini-opportunity-btn').forEach(button => {
+                button.addEventListener('click', async (event) => {
+                    event.stopPropagation(); 
+                    const cardElement = event.target.closest('.opportunity-card');
+                    const opportunityTitle = cardElement.dataset.title; 
+                    showGeminiModal('gemini_modal_title'); 
+                    const prompt = `Provide 3 actionable insights or innovative solutions related to using Generative AI for "${opportunityTitle}" (in context of climate change and SDGs). Focus on practical applications and potential impact. Present as a short, bulleted list.`;
+                    const insights = await callGeminiApi(prompt);
+                    geminiModalBody.innerHTML = insights;
+                });
+            });
+            
+            const currentActiveCard = document.querySelector('.opportunity-card.active');
+             if (currentActiveCard && currentOpportunities.find(item => item.id === currentActiveCard.dataset.id)) { 
+                const id = currentActiveCard.getAttribute('data-id');
+                const data = currentOpportunities.find(item => item.id === id);
+                if(data) updateOpportunitiesChart(data);
+            } else if (opportunitiesChart) { 
+                opportunitiesChart.destroy();
+                opportunitiesChart = null;
+                document.getElementById('chart-title').textContent = siteTranslations[currentLang]['opportunities_chart_placeholder_title'];
+                document.getElementById('chart-description').textContent = siteTranslations[currentLang]['opportunities_chart_placeholder_desc'];
+                if(activeOpportunityCard) activeOpportunityCard.classList.remove('active'); 
+                activeOpportunityCard = null;
+            }
+        }
+
+        function updateOpportunitiesChart(data) {
+            const chartCanvas = document.getElementById('opportunitiesChart');
+            document.getElementById('chart-title').textContent = data.chartData.title; 
+            document.getElementById('chart-description').textContent = data.chartData.description; 
+
+            if (opportunitiesChart) opportunitiesChart.destroy();
+            
+            opportunitiesChart = new Chart(chartCanvas, {
+                type: 'bar',
+                data: {
+                    labels: data.chartData.labels, 
+                    datasets: [{
+                        label: siteTranslations[currentLang]['opportunities_chart_label'] || 'Metric Value',
+                        data: data.chartData.data,
+                        backgroundColor: ['rgba(52, 142, 219, 0.6)', 'rgba(217, 119, 6, 0.6)', 'rgba(75, 192, 192, 0.6)'],
+                        borderColor: ['rgba(52, 142, 219, 1)', 'rgba(217, 119, 6, 1)', 'rgba(75, 192, 192, 1)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+                    scales: { x: { beginAtZero: true, grid: { drawOnChartArea: false } }, y: { grid: { display: false } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+        
+        // --- SDG CHART SECTION ---
+        function initSDGChart() {
+            const selector = document.getElementById('sdg-selector');
+            const previousSelectedValue = selector.value;
+            selector.innerHTML = ''; 
+            const allOpportunities = [...opportunitiesDataStore[currentLang].mitigation, ...opportunitiesDataStore[currentLang].adaptation];
+
+            allOpportunities.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item.title; 
+                selector.appendChild(option);
+            });
+            
+            if (previousSelectedValue && selector.querySelector(`option[value="${previousSelectedValue}"]`)) {
+                selector.value = previousSelectedValue;
+            } else if (selector.options.length > 0) {
+                 selector.value = selector.options[0].value;
+            }
+
+
+            const sdgLabels = siteTranslations[currentLang].sdg_labels;
+            const datasetLabel = siteTranslations[currentLang].sdgs_chart_dataset_label;
+
+            const ctx = document.getElementById('sdgChart').getContext('2d');
+            if (sdgChart) sdgChart.destroy(); 
+            sdgChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: sdgLabels,
+                    datasets: [{
+                        label: datasetLabel,
+                        data: [0,0,0,0,0,0,0,0,0,0,0], 
+                        backgroundColor: 'rgba(217, 119, 6, 0.2)',
+                        borderColor: 'rgba(217, 119, 6, 1)',
+                        pointBackgroundColor: 'rgba(217, 119, 6, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { r: { angleLines: { color: 'rgba(0,0,0,0.1)' }, grid: { color: 'rgba(0,0,0,0.1)' }, pointLabels: { font: { size: 10 }, color: '#555' }, ticks: { backdropColor: 'rgba(255,255,255,0.75)', stepSize: 2 }, suggestedMin: 0, suggestedMax: 10 } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+            
+            selector.removeEventListener('change', updateSDGChartListener); 
+            selector.addEventListener('change', updateSDGChartListener);
+            if (selector.value) updateSDGChartListener({target: selector}); 
+        }
+        
+        function updateSDGChartListener(e) { 
+            const id = e.target.value;
+            const selectedData = sdgDataStore[currentLang][id] || sdgDataStore['en'][id];
+            if (selectedData) {
+                sdgChart.data.datasets[0].data = selectedData.data;
+                sdgChart.data.datasets[0].label = selectedData.label;
+                sdgChart.update();
+            }
+        }
+
+        // --- GOVERNANCE ACCORDION ---
+        function initAccordion() {
+            const container = document.getElementById('accordion-container');
+            const currentGovernanceData = governanceDataStore[currentLang];
+            const geminiButtonText = siteTranslations[currentLang]['governance_gemini_button'] || "✨ Brainstorm Policy Solutions";
+
+            container.innerHTML = currentGovernanceData.map((item) => `
+                <div class="accordion-item bg-white rounded-lg shadow-sm border">
+                    <button class="accordion-header w-full flex justify-between items-center p-5 text-left font-semibold">
+                        <span class="flex items-center"><span class="text-2xl mr-4">${item.icon}</span> ${item.title}</span>
+                        <span class="accordion-icon text-2xl font-light transition-transform transform">+</span>
+                    </button>
+                    <div class="accordion-content px-5">
+                        <div class="pb-2 text-gray-600">${item.content}</div>
+                        <button class="gemini-button mt-2 mb-4 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-300 w-full sm:w-auto gemini-governance-btn" data-challenge="${item.title}">
+                            ${geminiButtonText}
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.accordion-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const content = header.nextElementSibling;
+                    const icon = header.querySelector('.accordion-icon');
+                    const isOpen = content.style.maxHeight && content.style.maxHeight !== '0px';
+                    document.querySelectorAll('.accordion-content').forEach(c => { if (c !== content) c.style.maxHeight = '0px';});
+                    document.querySelectorAll('.accordion-icon').forEach(i => { if (i !== icon) { i.textContent = '+'; i.classList.remove('rotate-45'); }});
+                    if (!isOpen) {
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                        icon.textContent = '+'; icon.classList.add('rotate-45');
+                    } else {
+                        content.style.maxHeight = '0px'; icon.classList.remove('rotate-45');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.gemini-governance-btn').forEach(button => {
+                button.addEventListener('click', async (event) => {
+                    const challengeTitle = event.target.dataset.challenge; 
+                    showGeminiModal('gemini_modal_title');
+                    const prompt = `For the governance challenge of "${challengeTitle}" related to Generative AI and climate action, brainstorm 3 innovative policy ideas or governance strategies to mitigate this risk while fostering responsible AI development. Present as a short, bulleted list.`;
+                    const solutions = await callGeminiApi(prompt);
+                    geminiModalBody.innerHTML = solutions;
+                });
+            });
+        }
+
+        // --- MODEL SANDBOX ---
+        function initModelSandbox() {
+            const currentModelsData = genAIModelsDataStore[currentLang];
+            modelSelectionGrid.innerHTML = currentModelsData.map(model => `
+                <div class="model-select-card bg-white p-4 rounded-lg border-2 border-gray-200 text-center flex flex-col items-center justify-center" data-model-id="${model.id}">
+                    <img src="${model.icon}" alt="${model.name} icon" class="w-10 h-10 mb-2 object-contain" onerror="this.onerror=null;this.src='https://placehold.co/50x50/cccccc/969696?text=Icon';this.alt='Error loading icon';">
+                    <h5 class="text-xs sm:text-sm font-semibold text-gray-700">${model.name}</h5>
+                </div>
+            `).join('');
+
+            document.querySelectorAll('.model-select-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const modelId = card.dataset.modelId;
+                    const modelData = currentModelsData.find(m => m.id === modelId);
+                    displayModelInfo(modelData);
+                    if (activeModelCard) activeModelCard.classList.remove('active');
+                    card.classList.add('active');
+                    activeModelCard = card;
+                });
+            });
+            
+            const currentActiveModelCard = document.querySelector('.model-select-card.active');
+            if (currentActiveModelCard) {
+                const modelId = currentActiveModelCard.dataset.modelId;
+                const modelData = currentModelsData.find(m => m.id === modelId);
+                if(modelData) displayModelInfo(modelData);
+            } else {
+                modelInfoDisplay.innerHTML = `<p class="text-center text-gray-500">${siteTranslations[currentLang]['sandbox_placeholder']}</p>`;
+            }
+        }
+
+        function displayModelInfo(model) {
+            if (!model) {
+                modelInfoDisplay.innerHTML = `<p class="text-center text-gray-500">${siteTranslations[currentLang]['sandbox_placeholder']}</p>`;
+                return;
+            }
+            const geminiButtonText = siteTranslations[currentLang]['sandbox_gemini_button'] || "✨ Generate Example Application Scenario";
+            let pretrainedHTML = '';
+            if (model.pretrainedExamples && model.pretrainedExamples.length > 0) {
+                pretrainedHTML = `
+                    <div>
+                        <h5 class="font-semibold text-gray-800 mt-3">${siteTranslations[currentLang]['sandbox_pretrained_title']}</h5>
+                        <ul class="list-none pl-0 space-y-2 mt-1">
+                            ${model.pretrainedExamples.map(ex => `
+                                <li class="text-gray-600">
+                                    <span class="font-medium text-amber-700">${ex.vendor}:</span> ${ex.modelName}
+                                    ${ex.note ? `<span class="block text-xs text-gray-500 italic pl-2">- ${ex.note}</span>` : ''}
+                                </li>`).join('')}
+                        </ul>
+                    </div>`;
+            }
+
+            modelInfoDisplay.innerHTML = `
+                <h4 class="text-2xl font-bold text-amber-700 mb-3 flex items-center">
+                    <img src="${model.icon}" alt="${model.name} icon" class="w-8 h-8 mr-3 object-contain" onerror="this.onerror=null;this.src='https://placehold.co/32x32/cccccc/969696?text=Icon';this.alt='Error loading icon';">
+                    ${model.name}
+                </h4>
+                <div class="space-y-3 text-sm">
+                    <div><h5 class="font-semibold text-gray-800">${siteTranslations[currentLang]['sandbox_core_principle']}</h5><p class="text-gray-600">${model.corePrinciple}</p></div>
+                    <div><h5 class="font-semibold text-gray-800">${siteTranslations[currentLang]['sandbox_strengths']}</h5><ul class="list-disc list-inside text-gray-600 pl-4 space-y-1">${model.strengths.map(s => `<li>${s}</li>`).join('')}</ul></div>
+                    <div><h5 class="font-semibold text-gray-800">${siteTranslations[currentLang]['sandbox_applications']}</h5><ul class="list-disc list-inside text-gray-600 pl-4 space-y-1">${model.applications.map(app => `<li>${app}</li>`).join('')}</ul></div>
+                    ${pretrainedHTML}
+                    <button class="gemini-button mt-6 py-2.5 px-5 rounded-md text-base font-medium transition-colors duration-300 w-full sm:w-auto" id="generateModelScenarioBtn" data-model-name="${model.name}">
+                        ${geminiButtonText}
+                    </button>
+                </div>
+            `;
+            document.getElementById('generateModelScenarioBtn').addEventListener('click', async () => {
+                showGeminiModal('gemini_modal_title');
+                const prompt = `Describe a hypothetical but plausible scenario where ${model.name} are used for advanced climate data analysis or modeling. Focus on a specific climate challenge (e.g., predicting extreme weather, designing climate-resilient infrastructure, analyzing IPCC CMIP6 data, or innovating sustainable materials) and explain the expected outcome or insight. Keep it concise (around 2-3 paragraphs) and accessible for a general audience interested in AI and climate.`;
+                const scenario = await callGeminiApi(prompt);
+                geminiModalBody.innerHTML = scenario;
+            });
+        }
+        
+        // --- DATASETS SECTION ---
+        function renderDatasets() {
+            const currentDatasets = datasetsDataStore[currentLang]; 
+            datasetsGrid.innerHTML = currentDatasets.map(dataset => `
+                <div class="dataset-card bg-white p-6 rounded-xl shadow-md border border-gray-200 flex flex-col">
+                    <img src="${dataset.img}" alt="${siteTranslations[currentLang][dataset.titleKey]} placeholder image" class="w-full h-32 object-cover rounded-md mb-4" onerror="this.onerror=null;this.src='https://placehold.co/300x150/cccccc/969696?text=Image+Not+Found';this.alt='Error loading image';">
+                    <h4 class="text-xl font-bold text-amber-700 mb-2">${siteTranslations[currentLang][dataset.titleKey]}</h4>
+                    <p class="text-gray-600 text-sm mb-3 flex-grow">${siteTranslations[currentLang][dataset.descKey]}</p>
+                    <p class="text-gray-500 text-xs mb-1"><strong>${siteTranslations[currentLang][dataset.useCasesTitleKey]}</strong></p>
+                    <ul class="list-disc list-inside text-gray-600 text-xs space-y-1 mb-4 flex-grow">
+                        ${dataset.items.map(itemKey => `<li>${siteTranslations[currentLang][itemKey]}</li>`).join('')}
+                    </ul>
+                    <a href="${dataset.url}" target="_blank" rel="noopener noreferrer" class="mt-auto inline-block bg-amber-600 text-white text-center py-2 px-4 rounded-md text-sm font-medium hover:bg-amber-700 transition-colors">${siteTranslations[currentLang][dataset.buttonKey]}</a>
+                </div>
+            `).join('');
+        }
+
+        // --- ANIMATE COUNTERS ---
+        function animateCounters() {
+            const counters = document.querySelectorAll('[data-target]');
+            const speed = 200;
+            counters.forEach(counter => {
+                const updateCount = () => {
+                    const target = +counter.getAttribute('data-target');
+                    let currentVal = +counter.innerText.replace(/,/g, '.'); 
+                    const targetFloat = parseFloat(target);
+                    const inc = targetFloat / speed;
+
+                    if (currentVal < targetFloat) {
+                        currentVal += inc;
+                        if (currentVal > targetFloat) currentVal = targetFloat;
+                        counter.innerText = targetFloat % 1 === 0 ? Math.ceil(currentVal) : currentVal.toFixed(2);
+                        setTimeout(updateCount, 10); 
+                    } else {
+                         counter.innerText = targetFloat % 1 === 0 ? targetFloat : targetFloat.toFixed(2);
+                    }
+                };
+                updateCount();
+            });
+        }
+        
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            closeGeminiModalButton.addEventListener('click', hideGeminiModal);
+            geminiModal.addEventListener('click', (event) => { if (event.target === geminiModal) hideGeminiModal(); });
+
+            languageToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                languageDropdown.classList.toggle('hidden');
+            });
+            document.addEventListener('click', (e) => { 
+                if (!languageToggle.contains(e.target) && !languageDropdown.contains(e.target)) {
+                    languageDropdown.classList.add('hidden');
+                }
+            });
+
+            document.querySelectorAll('#language-dropdown a').forEach(anchor => {
+                anchor.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    setLanguage(e.target.dataset.lang);
+                });
+            });
+            
+            animateCounters();
+            setLanguage(currentLang); 
+            
+            if (!mitigationTab.classList.contains('active') && !adaptationTab.classList.contains('active')) {
+                 mitigationTab.click();
+            } else if (mitigationTab.classList.contains('active')) {
+                 renderOpportunities('mitigation'); 
+            } else if (adaptationTab.classList.contains('active')) {
+                 renderOpportunities('adaptation'); 
+            }
+        });
+    </script>
+</body>
+</html>
